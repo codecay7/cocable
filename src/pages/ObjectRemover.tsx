@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2, Eraser, Download, RotateCcw } from 'lucide-react';
+import { Loader2, Eraser, Download, RotateCcw, Undo, Redo } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
@@ -111,9 +111,9 @@ const ObjectRemover = () => {
     setMaskCanvas(null);
   };
 
-  const handleClearMask = () => {
-    markingCanvasRef.current?.clear();
-  };
+  const handleClearMask = () => markingCanvasRef.current?.clear();
+  const handleUndo = () => markingCanvasRef.current?.undo();
+  const handleRedo = () => markingCanvasRef.current?.redo();
 
   const isMaskEmpty = () => {
     if (!maskCanvas) return true;
@@ -150,9 +150,17 @@ const ObjectRemover = () => {
                     onValueChange={(value) => setBrushSize(value[0])}
                   />
                 </div>
-                <Button onClick={handleClearMask} variant="outline" size="sm">
-                  <RotateCcw className="w-4 h-4 mr-2" /> Clear Mask
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button onClick={handleUndo} variant="outline" size="sm" disabled={!markingCanvasRef.current?.canUndo}>
+                    <Undo className="w-4 h-4 mr-2" /> Undo
+                  </Button>
+                  <Button onClick={handleRedo} variant="outline" size="sm" disabled={!markingCanvasRef.current?.canRedo}>
+                    <Redo className="w-4 h-4 mr-2" /> Redo
+                  </Button>
+                  <Button onClick={handleClearMask} variant="outline" size="sm" className="ml-auto">
+                    <RotateCcw className="w-4 h-4 mr-2" /> Clear Mask
+                  </Button>
+                </div>
               </div>
               <MarkingCanvas
                 ref={markingCanvasRef}

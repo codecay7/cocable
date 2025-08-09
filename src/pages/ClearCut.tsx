@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2, Share2, Wand2 } from 'lucide-react';
+import { Loader2, Share2, Wand2, Eye } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
@@ -25,6 +25,7 @@ const ClearCut = () => {
   const [isShareSupported, setIsShareSupported] = useState(false);
   const [quality, setQuality] = useState<'general' | 'landscape'>('general');
   const [isRefining, setIsRefining] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
   const cardRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ const ClearCut = () => {
     setBackground('transparent');
     setIsShadowEnabled(false);
     setIsRefining(false);
+    setShowCompare(false);
   };
 
   const handleRemoveBackground = async () => {
@@ -165,20 +167,50 @@ const ClearCut = () => {
     setBackground('transparent');
     setIsShadowEnabled(false);
     setIsRefining(false);
+    setShowCompare(false);
   };
 
-  const modifiedImage = processedImage && (
-    <div className="w-full h-full" style={{ background }}>
-      <ReactCompareSliderImage
-        src={processedImage}
-        alt="Result"
-        style={{
-          filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
-          transition: 'filter 0.3s ease-in-out',
-        }}
-      />
-    </div>
-  );
+  const ResultDisplay = () => {
+    if (!processedImage || !originalImage) return null;
+
+    const finalImage = (
+      <div 
+        className="w-full h-full flex items-center justify-center rounded-md overflow-hidden border"
+        style={{ background }}
+      >
+        <img
+          src={processedImage}
+          alt="Result"
+          className="max-w-full max-h-full"
+          style={{
+            filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
+            transition: 'filter 0.3s ease-in-out',
+            maxHeight: '500px'
+          }}
+        />
+      </div>
+    );
+
+    if (showCompare) {
+      return (
+        <ComparisonSlider
+          original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage)} alt="Original Image" />}
+          modified={
+            <div className="w-full h-full" style={{ background }}>
+              <ReactCompareSliderImage
+                src={processedImage}
+                alt="Result"
+                style={{
+                  filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
+                }}
+              />
+            </div>
+          }
+        />
+      );
+    }
+    return finalImage;
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -225,13 +257,15 @@ const ClearCut = () => {
               <div className="space-y-6">
                 <div className="space-y-4 text-center">
                   <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
-                  <ComparisonSlider
-                    original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage!)} alt="Original Image" />}
-                    modified={modifiedImage}
-                  />
-                  <Button onClick={() => setIsRefining(true)} variant="secondary">
-                    <Wand2 className="mr-2 h-4 w-4" /> Refine Manually
-                  </Button>
+                  <ResultDisplay />
+                  <div className="flex justify-center gap-2">
+                    <Button onClick={() => setIsRefining(true)} variant="secondary">
+                      <Wand2 className="mr-2 h-4 w-4" /> Refine Manually
+                    </Button>
+                    <Button onClick={() => setShowCompare(s => !s)} variant="outline">
+                      <Eye className="mr-2 h-4 w-4" /> {showCompare ? 'Hide' : 'Show'} Compare
+                    </Button>
+                  </div>
                 </div>
                 
                 <EditPanel 

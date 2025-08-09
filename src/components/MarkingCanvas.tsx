@@ -8,6 +8,10 @@ interface MarkingCanvasProps {
 
 export interface MarkingCanvasRef {
   clear: () => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export const MarkingCanvas = forwardRef<MarkingCanvasRef, MarkingCanvasProps>(
@@ -16,6 +20,21 @@ export const MarkingCanvas = forwardRef<MarkingCanvasRef, MarkingCanvasProps>(
     const imageCanvasRef = useRef<HTMLCanvasElement>(null);
     const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
+    const [history, setHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+
+    const restoreFromHistory = (index: number) => {
+      const canvas = drawingCanvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx || !history[index]) return;
+
+      const image = new Image();
+      image.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0);
+      };
+      image.src = history[index];
+    };
 
     useEffect(() => {
       const image = new Image();
@@ -35,8 +54,14 @@ export const MarkingCanvas = forwardRef<MarkingCanvasRef, MarkingCanvasProps>(
         imageCanvas.width = drawingCanvas.width = width;
         imageCanvas.height = drawingCanvas.height = height;
 
-        const ctx = imageCanvas.getContext('2d');
-        ctx?.drawImage(image, 0, 0, width, height);
+        const imgCtx = imageCanvas.getContext('2d');
+        imgCtx?.drawImage(image, 0, 0, width, height);
+        
+        const drawCtx = drawingCanvas.getContext('2d');
+        drawCtx?.clearRect(0, 0, width, height);
+        const dataUrl = drawingCanvas.toDataURL();
+        setHistory([dataUrl]);
+        setHistoryIndex(0);
       };
     }, [imageSrc]);
 
@@ -47,8 +72,27 @@ export const MarkingCanvas = forwardRef<MarkingCanvasRef, MarkingCanvasProps>(
         if (canvas && ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           onDrawEnd(canvas);
+          const dataUrl = canvas.toDataURL();
+          setHistory([dataUrl]);
+          setHistoryIndex(0);
         }
       },
+      undo() {
+        if (historyIndex > 0) {
+          const newIndex = historyIndex - 1;
+          setHistoryIndex(newIndex);
+          restoreFromHistory(newIndex);
+        }
+      },
+      redo() {
+        if (historyIndex < history.length - 1) {
+          const newIndex = historyIndex + 1;
+          setHistoryIndex(newIndex);
+          restoreFromHistory(newIndex);
+        }
+      },
+      canUndo: historyIndex > 0,
+      canRedo: historyIndex < history.length - 1,
     }));
 
     const getCoords = (e: React.MouseEvent | React.TouchEvent) => {
@@ -91,6 +135,11 @@ export const MarkingCanvas = forwardRef<MarkingCanvasRef, MarkingCanvasProps>(
       setIsDrawing(false);
       const canvas = drawingCanvasRef.current;
       if (canvas) {
+        const dataUrl = canvas.toDataURL();
+        const newHistory = history.slice(0, historyIndex + 1);
+        newHistory.push(dataUrl);
+        setHistory(newHistory);
+        setHistoryIndex(newHistory.length - 1);
         onDrawEnd(canvas);
       }
     };

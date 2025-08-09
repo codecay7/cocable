@@ -81,47 +81,49 @@ const ClearCut = () => {
     }
   };
 
-  const generateFinalImage = useCallback(async (format: 'dataURL' | 'blob') => {
+  const generateFinalCanvas = useCallback(async () => {
     if (!processedImage) return null;
-    const image = new Image();
-    image.src = processedImage;
-    await image.decode();
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-
-    const PADDING = isShadowEnabled ? 30 : 0;
-    canvas.width = image.width + PADDING * 2;
-    canvas.height = image.height + PADDING * 2;
-
-    if (background !== 'transparent' && !background.includes('gradient')) {
-      ctx.fillStyle = background;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    } else if (background.includes('gradient')) {
-      // For now, download with transparent bg for gradients
-    }
-
-    if (isShadowEnabled) {
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-      ctx.shadowBlur = 20;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 10;
-    }
-
-    ctx.drawImage(image, PADDING, PADDING);
-
-    if (format === 'blob') {
-      return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
-    }
-    return canvas.toDataURL('image/png');
+    return new Promise<HTMLCanvasElement | null>((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+  
+        const PADDING = isShadowEnabled ? 30 : 0;
+        canvas.width = image.width + PADDING * 2;
+        canvas.height = image.height + PADDING * 2;
+  
+        if (background !== 'transparent' && !background.includes('gradient')) {
+          ctx.fillStyle = background;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+  
+        if (isShadowEnabled) {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 20;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 10;
+        }
+  
+        ctx.drawImage(image, PADDING, PADDING);
+        resolve(canvas);
+      };
+      image.onerror = () => resolve(null);
+      image.src = processedImage;
+    });
   }, [processedImage, background, isShadowEnabled]);
 
   const handleDownload = async () => {
-    const imageHref = await generateFinalImage('dataURL');
-    if (!imageHref) {
+    const canvas = await generateFinalCanvas();
+    if (!canvas) {
       showError("Could not generate image for download.");
       return;
     }
+    const imageHref = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = imageHref;
     link.download = 'clearcut-result.png';
@@ -131,23 +133,29 @@ const ClearCut = () => {
   };
 
   const handleShare = async () => {
-    const blob = await generateFinalImage('blob');
-    if (!blob) {
+    const canvas = await generateFinalCanvas();
+    if (!canvas) {
       showError("Could not generate image for sharing.");
       return;
     }
-    try {
-      const file = new File([blob], 'clearcut-result.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Image edited with ClearCut AI' });
-      } else {
-        showError("Your browser doesn't support sharing files.");
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        showError("Could not generate image for sharing.");
+        return;
       }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        showError('Sharing failed. Please try downloading instead.');
+      try {
+        const file = new File([blob], 'clearcut-result.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Image edited with ClearCut AI' });
+        } else {
+          showError("Your browser doesn't support sharing files.");
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          showError('Sharing failed. Please try downloading instead.');
+        }
       }
-    }
+    }, 'image/png');
   };
 
   const handleReset = () => {

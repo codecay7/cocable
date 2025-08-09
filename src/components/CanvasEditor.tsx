@@ -27,7 +27,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
 
     const image = new Image();
     image.crossOrigin = 'anonymous';
-    image.src = imageSrc;
+    
     image.onload = () => {
       canvas.width = image.width;
       canvas.height = image.height;
@@ -36,6 +36,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
       setHistory([dataUrl]);
       setHistoryIndex(0);
     };
+    
+    image.src = imageSrc;
   }, [imageSrc]);
 
   const pushHistory = (dataUrl: string) => {
@@ -51,12 +53,12 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
     if (!canvas || !ctx || !history[index]) return;
 
     const image = new Image();
-    image.src = history[index];
     image.onload = () => {
       ctx.globalCompositeOperation = 'source-over'; // FIX: Reset composite operation
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0);
     };
+    image.src = history[index];
   };
 
   const handleUndo = () => {

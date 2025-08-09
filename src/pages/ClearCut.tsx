@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2 } from 'lucide-react';
-import * as bodySegmentation from '@tensorflow-models/selfie_segmentation';
+import { Loader2, Share2 } from 'lucide-react';
+import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
+import { showError } from '@/utils/toast';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isShareSupported, setIsShareSupported] = useState(false);
+
+  useEffect(() => {
+    // Check for Web Share API support on component mount
+    if (navigator.share) {
+      setIsShareSupported(true);
+    }
+  }, []);
 
   const handleFileSelect = (file: File) => {
     setOriginalImage(file);
@@ -26,43 +35,42 @@ const ClearCut = () => {
     setError(null);
 
     try {
-      // Load the model from TensorFlow.js
       const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
       const segmenter = await bodySegmentation.createSegmenter(model, {
         runtime: 'tfjs',
       });
 
-      // Create an image element from the uploaded file
       const imageElement = new Image();
       imageElement.src = URL.createObjectURL(originalImage);
-      await imageElement.decode(); // Wait for the image to be fully loaded
+      await imageElement.decode();
 
-      // Segment the image to find the person
       const segmentation = await segmenter.segmentPeople(imageElement);
 
-      // Create a canvas to draw the new image with a transparent background
       const canvas = document.createElement('canvas');
       canvas.width = imageElement.width;
       canvas.height = imageElement.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
 
-      // Create a binary mask of the person vs. the background
-      const binaryMask = await bodySegmentation.toBinaryMask(segmentation, {r:0,g:0,b:0,a:255}, {r:0,g:0,b:0,a:0});
-      
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = imageElement.width;
-      tempCanvas.height = imageElement.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      if (!tempCtx) throw new Error('Could not get temp canvas context');
-      tempCtx.putImageData(binaryMask, 0, 0);
-
-      // Use compositing to clip the original image with the mask
-      ctx.drawImage(tempCanvas, 0, 0);
-      ctx.globalCompositeOperation = 'source-in';
+      // Draw the original image first
       ctx.drawImage(imageElement, 0, 0);
 
-      // Set the result
+      // Create a mask where the person is opaque and the background is transparent
+      const foreground = { r: 0, g: 0, b: 0, a: 255 };
+      const background = { r: 0, g: 0, b: 0, a: 0 };
+      const binaryMask = await bodySegmentation.toBinaryMask(segmentation, foreground, background);
+
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = imageElement.width;
+      maskCanvas.height = imageElement.height;
+      const maskCtx = maskCanvas.getContext('2d');
+      if (!maskCtx) throw new Error('Could not get mask canvas context');
+      maskCtx.putImageData(binaryMask, 0, 0);
+
+      // Use 'destination-in' to clip the original image with the mask
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.drawImage(maskCanvas, 0, 0);
+
       setProcessedImage(canvas.toDataURL('image/png'));
 
     } catch (e) {
@@ -81,6 +89,32 @@ const ClearCut = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleShare = async () => {
+    if (!processedImage) return;
+
+    try {
+      const response = await fetch(processedImage);
+      const blob = await response.blob();
+      const file = new File([blob], 'clearcut-result.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Image with Background Removed',
+          text: 'Check out this image I edited with ClearCut AI!',
+        });
+      } else {
+        showError("Your browser doesn't support sharing files.");
+      }
+    } catch (err: any) {
+      console.error('Share failed:', err);
+      // Don't show error if user cancels the share dialog
+      if (err.name !== 'AbortError') {
+        showError('Sharing failed. Please try downloading the image instead.');
+      }
+    }
   };
 
   const handleReset = () => {
@@ -136,8 +170,14 @@ const ClearCut = () => {
                   <img src={processedImage} alt="Background Removed" className="max-h-80 mx-auto rounded-md border bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2032%2032%27%20size=%2716%2016%27%20fill-opacity=%27.1%27%3e%3cpath%20d=%27M0%200h16v16H0zM16%2016h16v16H16z%27/%3e%3c/svg%3e')]" />
                 </div>
               </div>
-              <div className="flex justify-center gap-4 pt-4">
+              <div className="flex flex-wrap justify-center gap-4 pt-4">
                 <Button onClick={handleDownload} size="lg">Download Image</Button>
+                {isShareSupported && (
+                  <Button onClick={handleShare} size="lg" variant="secondary">
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share
+                  </Button>
+                )}
                 <Button onClick={handleReset} variant="outline" size="lg">Process Another Image</Button>
               </div>
             </div>

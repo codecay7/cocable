@@ -53,6 +53,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
     const image = new Image();
     image.src = history[index];
     image.onload = () => {
+      ctx.globalCompositeOperation = 'source-over'; // FIX: Reset composite operation
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0);
     };
@@ -89,25 +90,19 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    setIsDrawing(true);
-    const { x, y } = getCoords(e);
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
+
+    setIsDrawing(true);
+    
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    const { x, y } = getCoords(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
-  };
-
-  const stopDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    if (!isDrawing) return;
-    setIsDrawing(false);
-    const ctx = canvasRef.current?.getContext('2d');
-    ctx?.closePath();
-    
-    const canvas = canvasRef.current;
-    if (canvas) {
-      pushHistory(canvas.toDataURL('image/png'));
-    }
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
@@ -117,13 +112,22 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
 
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.lineWidth = brushSize;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
     ctx.lineTo(x, y);
     ctx.stroke();
+  };
+
+  const stopDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    
+    // Ensure the final point is drawn to handle clicks
+    draw(e);
+    setIsDrawing(false);
+    
+    const canvas = canvasRef.current;
+    if (canvas) {
+      pushHistory(canvas.toDataURL('image/png'));
+    }
   };
 
   const handleSave = () => {

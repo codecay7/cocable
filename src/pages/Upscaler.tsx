@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -26,6 +27,7 @@ const Upscaler = () => {
   const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
   const { session, user } = useSession();
+  const { openModal } = usePurchaseModal();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -68,6 +70,7 @@ const Upscaler = () => {
       }
       if (credits === null || credits < 1) {
         showError("You don't have enough credits for this feature.");
+        openModal();
         return;
       }
     }
@@ -84,8 +87,8 @@ const Upscaler = () => {
         setCredits(c => (c !== null ? c - 1 : null));
         toast.success("1 credit used for Face Correction.", {
           action: (
-            <Button asChild variant="secondary" size="sm">
-              <Link to="/profile">Get More Credits</Link>
+            <Button onClick={openModal} variant="secondary" size="sm">
+              Get More Credits
             </Button>
           ),
         });
@@ -94,6 +97,7 @@ const Upscaler = () => {
           showError("You've reached your daily limit of 3 premium features.");
         } else if (e.message.includes('Insufficient credits')) {
           showError("You don't have enough credits.");
+          openModal();
         } else {
           showError("Credit deduction failed. Please try again.");
         }

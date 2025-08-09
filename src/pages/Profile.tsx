@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageUploader } from '@/components/ImageUploader';
 import { showError, showSuccess } from '@/utils/toast';
 import { Loader2, CreditCard } from 'lucide-react';
+import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 
 interface ProfileData {
   first_name: string;
@@ -23,6 +24,7 @@ const Profile = () => {
   const [credits, setCredits] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  const { openModal } = usePurchaseModal();
 
   useEffect(() => {
     if (user) {
@@ -160,7 +162,7 @@ const Profile = () => {
           <CardContent>
             <div className="text-4xl font-bold">{credits ?? <Loader2 className="h-8 w-8 animate-spin" />}</div>
             <p className="text-muted-foreground">credits remaining</p>
-            <Button className="mt-4" disabled>Buy More Credits (Coming Soon)</Button>
+            <Button className="mt-4" onClick={openModal}>Buy More Credits</Button>
           </CardContent>
         </Card>
       </div>

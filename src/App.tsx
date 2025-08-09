@@ -14,8 +14,15 @@ import { Layout } from "./components/Layout";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import { SessionProvider } from "./contexts/SessionContext";
+import { PurchaseModalProvider, usePurchaseModal } from "./contexts/PurchaseModalContext";
+import { BuyCreditsModal } from "./components/BuyCreditsModal";
 
 const queryClient = new QueryClient();
+
+const AppWithModal = () => {
+  const { isModalOpen, closeModal } = usePurchaseModal();
+  return <BuyCreditsModal isOpen={isModalOpen} onOpenChange={closeModal} />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -24,19 +31,22 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <SessionProvider>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/clearcut" element={<ClearCut />} />
-              <Route path="/upscaler" element={<Upscaler />} />
-              <Route path="/batch-remover" element={<BatchRemover />} />
-              <Route path="/object-remover" element={<ObjectRemover />} />
-              <Route path="/profile" element={<Profile />} />
-            </Route>
-            <Route path="/login" element={<Login />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <PurchaseModalProvider>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/clearcut" element={<ClearCut />} />
+                <Route path="/upscaler" element={<Upscaler />} />
+                <Route path="/batch-remover" element={<BatchRemover />} />
+                <Route path="/object-remover" element={<ObjectRemover />} />
+                <Route path="/profile" element={<Profile />} />
+              </Route>
+              <Route path="/login" element={<Login />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <AppWithModal />
+          </PurchaseModalProvider>
         </SessionProvider>
       </BrowserRouter>
     </TooltipProvider>

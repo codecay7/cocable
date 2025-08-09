@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2, Download, Sparkles } from 'lucide-react';
-import { showError } from '@/utils/toast';
+import { Loader2, Download, Sparkles, CreditCard } from 'lucide-react';
+import { showError, showSuccess } from '@/utils/toast';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { ReactCompareSliderImage } from 'react-compare-slider';
@@ -11,6 +11,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { useSession } from '@/hooks/useSession';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -19,7 +22,9 @@ const Upscaler = () => {
   const [error, setError] = useState<string | null>(null);
   const [scaleFactor, setScaleFactor] = useState<number>(2);
   const [faceCorrect, setFaceCorrect] = useState<boolean>(true);
+  const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
+  const { session, user } = useSession();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -27,6 +32,22 @@ const Upscaler = () => {
     }, cardRef);
     return () => ctx.revert();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      const fetchCredits = async () => {
+        const { data, error } = await supabase
+          .from('user_credits')
+          .select('credits')
+          .eq('user_id', user.id)
+          .single();
+        if (!error && data) {
+          setCredits(data.credits);
+        }
+      };
+      fetchCredits();
+    }
+  }, [user]);
 
   const handleFileSelect = (file: File) => {
     setOriginalImage(file);
@@ -36,9 +57,37 @@ const Upscaler = () => {
 
   const handleUpscale = async () => {
     if (!originalImage) return;
+
+    const isPremium = faceCorrect;
+
+    if (isPremium) {
+      if (!session) {
+        showError("Please log in to use premium features.");
+        return;
+      }
+      if (credits === null || credits < 1) {
+        showError("You don't have enough credits for this feature.");
+        return;
+      }
+    }
+
     setIsLoading(true);
     setError(null);
+
+    if (isPremium && session) {
+      try {
+        const { error: functionError } = await supabase.functions.invoke('deduct-credit');
+        if (functionError) throw new Error(functionError.message);
+        setCredits(c => (c !== null ? c - 1 : null));
+        showSuccess("1 credit used for Face Correction.");
+      } catch (e: any) {
+        showError(e.message === 'Insufficient credits' ? "You don't have enough credits." : "Credit deduction failed.");
+        setIsLoading(false);
+        return;
+      }
+    }
     
+    // Simulate AI processing
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     try {
@@ -123,6 +172,17 @@ const Upscaler = () => {
                       </Label>
                     </div>
                   </div>
+                   {session && faceCorrect && (
+                    <div className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      <span>{credits ?? '...'} credits remaining. This will use 1 credit.</span>
+                    </div>
+                  )}
+                  {!session && faceCorrect && (
+                    <Button asChild variant="link">
+                      <Link to="/login">Log in to use premium features</Link>
+                    </Button>
+                  )}
                 </div>
               )}
               <Button onClick={handleUpscale} disabled={!originalImage || isLoading} className="w-full" size="lg">

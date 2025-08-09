@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2, Share2, Wand2, Eye } from 'lucide-react';
+import { Loader2, Share2, Wand2, Eye, CreditCard } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { EditPanel } from '@/components/EditPanel';
@@ -15,6 +15,9 @@ import { ReactCompareSliderImage } from 'react-compare-slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { useSession } from '@/hooks/useSession';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -27,7 +30,9 @@ const ClearCut = () => {
   const [quality, setQuality] = useState<'general' | 'landscape'>('general');
   const [isRefining, setIsRefining] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
+  const { session, user } = useSession();
 
   useEffect(() => {
     if (navigator.share) setIsShareSupported(true);
@@ -36,6 +41,22 @@ const ClearCut = () => {
     }, cardRef);
     return () => ctx.revert();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      const fetchCredits = async () => {
+        const { data, error } = await supabase
+          .from('user_credits')
+          .select('credits')
+          .eq('user_id', user.id)
+          .single();
+        if (!error && data) {
+          setCredits(data.credits);
+        }
+      };
+      fetchCredits();
+    }
+  }, [user]);
 
   const handleFileSelect = (file: File) => {
     setOriginalImage(file);
@@ -49,8 +70,36 @@ const ClearCut = () => {
 
   const handleRemoveBackground = async () => {
     if (!originalImage) return;
+
+    const isPremium = quality === 'landscape';
+
+    if (isPremium) {
+      if (!session) {
+        showError("Please log in to use premium features.");
+        return;
+      }
+      if (credits === null || credits < 1) {
+        showError("You don't have enough credits for this feature.");
+        return;
+      }
+    }
+
     setIsLoading(true);
     setError(null);
+
+    if (isPremium && session) {
+      try {
+        const { error: functionError } = await supabase.functions.invoke('deduct-credit');
+        if (functionError) throw new Error(functionError.message);
+        setCredits(c => (c !== null ? c - 1 : null));
+        showSuccess("1 credit used for High Quality processing.");
+      } catch (e: any) {
+        showError(e.message === 'Insufficient credits' ? "You don't have enough credits." : "Credit deduction failed.");
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
       const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs', modelType: quality });
@@ -239,6 +288,17 @@ const ClearCut = () => {
                       <Badge variant="secondary" className="text-yellow-500 border-yellow-500/50">Premium</Badge>
                     </Label>
                   </div>
+                  {session && quality === 'landscape' && (
+                    <div className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      <span>{credits ?? '...'} credits remaining. This will use 1 credit.</span>
+                    </div>
+                  )}
+                  {!session && quality === 'landscape' && (
+                    <Button asChild variant="link">
+                      <Link to="/login">Log in to use premium features</Link>
+                    </Button>
+                  )}
                 </div>
               )}
               <Button onClick={handleRemoveBackground} disabled={!originalImage || isLoading} className="w-full" size="lg">

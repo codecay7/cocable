@@ -14,6 +14,7 @@ import { CanvasEditor } from '@/components/CanvasEditor';
 import { ReactCompareSliderImage } from 'react-compare-slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -233,7 +234,10 @@ const ClearCut = () => {
                       checked={quality === 'landscape'}
                       onCheckedChange={(checked) => setQuality(checked ? 'landscape' : 'general')}
                     />
-                    <Label htmlFor="quality-switch" className="font-semibold text-primary">High Quality</Label>
+                    <Label htmlFor="quality-switch" className="font-semibold text-primary flex items-center gap-2">
+                      High Quality
+                      <Badge variant="secondary" className="text-yellow-500 border-yellow-500/50">Premium</Badge>
+                    </Label>
                   </div>
                 </div>
               )}

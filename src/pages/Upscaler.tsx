@@ -10,6 +10,7 @@ import { ReactCompareSliderImage } from 'react-compare-slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -116,7 +117,10 @@ const Upscaler = () => {
                     </RadioGroup>
                     <div className="flex items-center space-x-2">
                       <Switch id="face-correct" checked={faceCorrect} onCheckedChange={setFaceCorrect} />
-                      <Label htmlFor="face-correct" className="flex items-center gap-1"><Sparkles className="w-4 h-4 text-yellow-400" /> Face Correction</Label>
+                      <Label htmlFor="face-correct" className="flex items-center gap-2">
+                        <span className="flex items-center gap-1"><Sparkles className="w-4 h-4 text-yellow-400" /> Face Correction</span>
+                        <Badge variant="secondary" className="text-yellow-500 border-yellow-500/50">Premium</Badge>
+                      </Label>
                     </div>
                   </div>
                 </div>

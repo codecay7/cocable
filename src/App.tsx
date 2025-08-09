@@ -12,6 +12,7 @@ import BatchRemover from "./pages/BatchRemover";
 import ObjectRemover from "./pages/ObjectRemover";
 import { Layout } from "./components/Layout";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import { SessionProvider } from "./contexts/SessionContext";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/upscaler" element={<Upscaler />} />
               <Route path="/batch-remover" element={<BatchRemover />} />
               <Route path="/object-remover" element={<ObjectRemover />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
             <Route path="/login" element={<Login />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

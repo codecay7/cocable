@@ -11,74 +11,74 @@ import { ImageUploader } from '@/components/ImageUploader';
 import { showError, showSuccess } from '@/utils/toast';
 import { Loader2, CreditCard } from 'lucide-react';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface ProfileData {
+  id: string;
   first_name: string;
   last_name: string;
   avatar_url: string;
 }
 
+const fetchProfile = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchCredits = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('user_credits')
+    .select('credits')
+    .eq('user_id', userId)
+    .single();
+  if (error) throw new Error(error.message);
+  return data.credits;
+};
+
 const Profile = () => {
   const { session, user, loading: sessionLoading } = useSession();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [credits, setCredits] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [isUpdating, setIsUpdating] = useState(false);
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState<Partial<ProfileData>>({});
   const { openModal } = usePurchaseModal();
 
-  useEffect(() => {
-    if (user) {
-      const fetchProfile = async () => {
-        setLoading(true);
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+  const { data: profile, isLoading: isProfileLoading } = useQuery<ProfileData>({
+    queryKey: ['profile', user?.id],
+    queryFn: () => fetchProfile(user!.id),
+    enabled: !!user,
+    onSuccess: (data) => setFormData(data),
+  });
 
-        if (profileError) {
-          showError('Could not fetch your profile.');
-          console.error(profileError);
-        } else {
-          setProfile(profileData);
-        }
-
-        const { data: creditsData, error: creditsError } = await supabase
-          .from('user_credits')
-          .select('credits')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (creditsError) {
-          showError('Could not fetch your credits.');
-        } else {
-          setCredits(creditsData.credits);
-        }
-        setLoading(false);
-      };
-      fetchProfile();
-    }
-  }, [user]);
+  const { data: credits, isLoading: isCreditsLoading } = useQuery<number>({
+    queryKey: ['credits', user?.id],
+    queryFn: () => fetchCredits(user!.id),
+    enabled: !!user,
+  });
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile) return;
 
-    setLoading(true);
+    setIsUpdating(true);
     let newAvatarUrl = profile.avatar_url;
 
     if (newAvatarFile) {
-      const filePath = `${user.id}/${newAvatarFile.name}`;
+      const filePath = `${user.id}/${Date.now()}-${newAvatarFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, newAvatarFile, { upsert: true });
 
       if (uploadError) {
         showError('Failed to upload new avatar.');
-        setLoading(false);
+        setIsUpdating(false);
         return;
       }
-
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
       newAvatarUrl = urlData.publicUrl;
     }
@@ -86,8 +86,8 @@ const Profile = () => {
     const { error } = await supabase
       .from('profiles')
       .update({ 
-        first_name: profile.first_name,
-        last_name: profile.last_name,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
         avatar_url: newAvatarUrl,
         updated_at: new Date().toISOString()
       })
@@ -97,10 +97,10 @@ const Profile = () => {
       showError('Failed to update profile.');
     } else {
       showSuccess('Profile updated successfully!');
-      setProfile({ ...profile, avatar_url: newAvatarUrl });
       setNewAvatarFile(null);
+      await queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
     }
-    setLoading(false);
+    setIsUpdating(false);
   };
 
   if (sessionLoading) {
@@ -111,6 +111,8 @@ const Profile = () => {
     return <Navigate to="/login" replace />;
   }
 
+  const isLoading = isProfileLoading || isCreditsLoading;
+
   return (
     <div className="container mx-auto p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -120,37 +122,41 @@ const Profile = () => {
             <CardDescription>Manage your account details and preferences.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <form onSubmit={handleUpdateProfile} className="space-y-6">
-              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url} />
-                  <AvatarFallback>{profile?.first_name?.[0] || user?.email?.[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-grow">
-                  <Label>Profile Picture</Label>
-                  <ImageUploader onFileSelect={setNewAvatarFile} />
-                  <p className="text-xs text-muted-foreground mt-2">Upload a new avatar. It will be updated when you save your profile.</p>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
+            ) : (
+              <form onSubmit={handleUpdateProfile} className="space-y-6">
+                <div className="flex items-center gap-6">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : formData?.avatar_url} />
+                    <AvatarFallback>{formData?.first_name?.[0] || user?.email?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-grow">
+                    <Label>Profile Picture</Label>
+                    <ImageUploader onFileSelect={setNewAvatarFile} />
+                    <p className="text-xs text-muted-foreground mt-2">Upload a new avatar. It will be updated when you save your profile.</p>
+                  </div>
                 </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input id="firstName" value={formData?.first_name || ''} onChange={(e) => setFormData(p => ({...p, first_name: e.target.value}))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" value={formData?.last_name || ''} onChange={(e) => setFormData(p => ({...p, last_name: e.target.value}))} />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" value={profile?.first_name || ''} onChange={(e) => setProfile(p => ({...p!, first_name: e.target.value}))} />
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" value={user?.email || ''} disabled />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" value={profile?.last_name || ''} onChange={(e) => setProfile(p => ({...p!, last_name: e.target.value}))} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" value={user?.email || ''} disabled />
-              </div>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-            </form>
+                <Button type="submit" disabled={isUpdating}>
+                  {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
 
@@ -160,7 +166,7 @@ const Profile = () => {
             <CardDescription>Monitor your usage and remaining credits.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{credits ?? <Loader2 className="h-8 w-8 animate-spin" />}</div>
+            <div className="text-4xl font-bold">{isCreditsLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : credits}</div>
             <p className="text-muted-foreground">credits remaining</p>
             <Button className="mt-4" onClick={openModal}>Buy More Credits</Button>
           </CardContent>

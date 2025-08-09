@@ -19,7 +19,7 @@ export const FeaturesHighlight = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="container mx-auto py-16 md:py-24">
+    <section ref={sectionRef} className="container mx-auto py-16 md:py-24 overflow-x-hidden">
       <div className="grid md:grid-cols-2 gap-12 items-center">
         <div className="feature-text">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">One-Click Background Removal</h2>

@@ -8,6 +8,7 @@ import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
 import { showError } from '@/utils/toast';
+import { ComparisonSlider } from '@/components/ComparisonSlider';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -167,16 +168,10 @@ const ClearCut = () => {
             <div className="space-y-6">
               <div className="space-y-4 text-center">
                 <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                  <div>
-                    <h4 className="font-medium mb-2">Original</h4>
-                    <img src={URL.createObjectURL(originalImage!)} alt="Original" className="max-h-80 mx-auto rounded-md border" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Result</h4>
-                    <img src={displayImage} alt="Background Removed" className="max-h-80 mx-auto rounded-md border" style={{ background: backgroundColor === 'transparent' ? `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' size='16 16' fill-opacity='.1'%3e%3cpath d='M0 0h16v16H0zM16 16h16v16H16z'/%3e%3c/svg%3e")` : '' }} />
-                  </div>
-                </div>
+                <ComparisonSlider
+                  original={URL.createObjectURL(originalImage!)}
+                  modified={displayImage}
+                />
               </div>
               
               <ColorPicker onColorChange={setBackgroundColor} selectedColor={backgroundColor} />

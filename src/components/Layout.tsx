@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { MadeWithDyad } from './made-with-dyad';
 import { ToolSwitcher } from './ToolSwitcher';
+import { Footer } from './Footer';
 
 export const Layout = () => {
   const location = useLocation();
@@ -15,6 +16,7 @@ export const Layout = () => {
         <Outlet />
         {!isHomePage && <ToolSwitcher />}
       </main>
+      <Footer />
       <div className="border-t bg-transparent">
         <MadeWithDyad />
       </div>

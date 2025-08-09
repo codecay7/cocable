@@ -232,11 +232,10 @@ const ClearCut = () => {
         <img
           src={processedImage}
           alt="Result"
-          className="max-w-full max-h-full"
+          className="max-w-full max-h-full object-contain max-h-[60vh]"
           style={{
             filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
             transition: 'filter 0.3s ease-in-out',
-            maxHeight: '500px'
           }}
         />
       </div>
@@ -276,7 +275,7 @@ const ClearCut = () => {
               <ImageUploader onFileSelect={handleFileSelect} />
               {originalImage && (
                 <div className="text-center p-4 border rounded-lg space-y-4">
-                  <img src={URL.createObjectURL(originalImage)} alt="Preview" className="max-h-60 mx-auto rounded-md" />
+                  <img src={URL.createObjectURL(originalImage)} alt="Preview" className="max-h-[40vh] mx-auto rounded-md object-contain" />
                   <p className="text-sm text-muted-foreground mt-2">{originalImage.name}</p>
                   <div className="flex items-center justify-center space-x-2">
                     <Label htmlFor="quality-switch">Standard</Label>
@@ -305,7 +304,7 @@ const ClearCut = () => {
                   )}
                 </div>
               )}
-              <Button onClick={handleRemoveBackground} disabled={!originalImage || isLoading} className="w-full" size="lg">
+              <Button onClick={handleRemoveBackground} disabled={!originalImage || isLoading} className="w-full h-12" size="lg">
                 {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing with AI...</>) : ('Remove Background')}
               </Button>
             </div>
@@ -326,11 +325,11 @@ const ClearCut = () => {
                 <div className="space-y-4 text-center">
                   <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
                   <ResultDisplay />
-                  <div className="flex justify-center gap-2">
-                    <Button onClick={() => setIsRefining(true)} variant="secondary">
+                  <div className="flex flex-col sm:flex-row justify-center items-center gap-2 w-full">
+                    <Button onClick={() => setIsRefining(true)} variant="secondary" className="w-full sm:w-auto">
                       <Wand2 className="mr-2 h-4 w-4" /> Refine Manually
                     </Button>
-                    <Button onClick={() => setShowCompare(s => !s)} variant="outline">
+                    <Button onClick={() => setShowCompare(s => !s)} variant="outline" className="w-full sm:w-auto">
                       <Eye className="mr-2 h-4 w-4" /> {showCompare ? 'Hide' : 'Show'} Compare
                     </Button>
                   </div>
@@ -344,13 +343,13 @@ const ClearCut = () => {
                 />
 
                 <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 border-t">
-                  <Button onClick={handleDownload} size="lg" className="flex-1">Download Image</Button>
+                  <Button onClick={handleDownload} size="lg" className="flex-1 h-12">Download Image</Button>
                   {isShareSupported && (
-                    <Button onClick={handleShare} size="lg" variant="secondary" className="flex-1">
+                    <Button onClick={handleShare} size="lg" variant="secondary" className="flex-1 h-12">
                       <Share2 className="mr-2 h-4 w-4" /> Share
                     </Button>
                   )}
-                  <Button onClick={handleReset} variant="outline" size="lg" className="flex-1">Process Another</Button>
+                  <Button onClick={handleReset} variant="outline" size="lg" className="flex-1 h-12">Process Another</Button>
                 </div>
               </div>
             )

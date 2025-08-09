@@ -9,6 +9,7 @@ import { HowItWorks } from '@/components/HowItWorks';
 import { FeaturesHighlight } from '@/components/FeaturesHighlight';
 import { Faq } from '@/components/Faq';
 import { Cta } from '@/components/Cta';
+import { PromoBanner } from '@/components/PromoBanner';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -105,6 +106,7 @@ const Index = () => {
         </div>
       </div>
       
+      <PromoBanner />
       <HowItWorks />
       <FeaturesHighlight />
       <Faq />

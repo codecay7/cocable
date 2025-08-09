@@ -12,6 +12,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Loader2, CreditCard } from 'lucide-react';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { RedeemCoupon } from '@/components/RedeemCoupon';
 
 interface ProfileData {
   id: string;
@@ -181,6 +182,7 @@ const Profile = () => {
             <p className="text-muted-foreground">credits remaining</p>
             <Button className="mt-4" onClick={openModal}>Buy More Credits</Button>
           </CardContent>
+          <RedeemCoupon />
         </Card>
       </div>
     </div>

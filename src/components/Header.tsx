@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Scissors, ArrowUpRightSquare, Menu, Eraser, ImageIcon, CopyPlus } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
@@ -8,7 +9,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from './ui/button';
-import { useState } from 'react';
 
 const tools = [
   {

@@ -1,3 +1,4 @@
+import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Scissors, ArrowUpRightSquare, Eraser, CopyPlus } from 'lucide-react';

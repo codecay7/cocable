@@ -24,6 +24,12 @@ const tools = [
     icon: <ArrowUpRightSquare className="h-5 w-5" />,
   },
   {
+    name: "AI Object Remover",
+    path: "/object-remover",
+    description: "Erase unwanted objects or people from photos.",
+    icon: <Eraser className="h-5 w-5" />,
+  },
+  {
     name: "Batch Remover",
     path: "/batch-remover",
     description: "Process dozens of images at once.",

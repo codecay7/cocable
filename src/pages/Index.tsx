@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { Zap } from 'lucide-react';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
+    <div className="container flex flex-1 flex-col items-center justify-center p-4">
       <div className="text-center max-w-2xl">
         <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
           Instantly Remove Backgrounds with <span className="text-primary">ClearCut AI</span>
@@ -21,9 +20,6 @@ const Index = () => {
             </Link>
           </Button>
         </div>
-      </div>
-      <div className="absolute bottom-4">
-        <MadeWithDyad />
       </div>
     </div>
   );

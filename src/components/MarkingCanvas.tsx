@@ -51,8 +51,8 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
       const container = containerRef.current;
       if (!imageCanvas || !drawingCanvas || !container) return;
 
-      const containerWidth = container.offsetWidth;
-      const scale = Math.min(1, containerWidth / image.width);
+      container.style.aspectRatio = `${image.width} / ${image.height}`;
+
       const canvasWidth = image.width;
       const canvasHeight = image.height;
 
@@ -97,7 +97,7 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
     
     const { x, y } = getRelativeCoords(e);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = 'rgba(255, 0, 150, 0.8)';
+    ctx.strokeStyle = 'rgb(255, 0, 150)'; // Use solid color for a clean mask
     ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -152,33 +152,38 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
 
     const imageCanvas = imageCanvasRef.current;
     const drawingCanvas = drawingCanvasRef.current;
-    if (!imageCanvas || !drawingCanvas) return;
+    if (!imageCanvas || !drawingCanvas) {
+      setIsProcessing(false);
+      return;
+    }
 
-    const resultCanvas = document.createElement('canvas');
-    resultCanvas.width = imageCanvas.width;
-    resultCanvas.height = imageCanvas.height;
-    const resultCtx = resultCanvas.getContext('2d');
-    if (!resultCtx) return;
-
-    // AI Inpainting Simulation
-    resultCtx.drawImage(imageCanvas, 0, 0);
-    resultCtx.filter = 'blur(20px)';
-    resultCtx.drawImage(imageCanvas, 0, 0);
-    
-    resultCtx.globalCompositeOperation = 'destination-in';
-    resultCtx.drawImage(drawingCanvas, 0, 0);
-    
-    resultCtx.filter = 'none';
-    resultCtx.globalCompositeOperation = 'source-over';
-    
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = imageCanvas.width;
     finalCanvas.height = imageCanvas.height;
     const finalCtx = finalCanvas.getContext('2d');
-    if (!finalCtx) return;
+    if (!finalCtx) {
+      setIsProcessing(false);
+      return;
+    }
+
+    const blurCanvas = document.createElement('canvas');
+    blurCanvas.width = imageCanvas.width;
+    blurCanvas.height = imageCanvas.height;
+    const blurCtx = blurCanvas.getContext('2d');
+    if (!blurCtx) {
+      setIsProcessing(false);
+      return;
+    }
+    blurCtx.filter = 'blur(25px)';
+    blurCtx.drawImage(imageCanvas, 0, 0);
+    blurCtx.filter = 'none';
 
     finalCtx.drawImage(imageCanvas, 0, 0);
-    finalCtx.drawImage(resultCanvas, 0, 0);
+    finalCtx.globalCompositeOperation = 'destination-out';
+    finalCtx.drawImage(drawingCanvas, 0, 0);
+    finalCtx.globalCompositeOperation = 'destination-over';
+    finalCtx.drawImage(blurCanvas, 0, 0);
+    finalCtx.globalCompositeOperation = 'source-over';
 
     onComplete(finalCanvas.toDataURL('image/png'));
     setIsProcessing(false);
@@ -203,7 +208,7 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
         </div>
       </div>
 
-      <div ref={containerRef} className="relative w-full max-w-full mx-auto aspect-auto overflow-hidden rounded-md border">
+      <div ref={containerRef} className="relative w-full max-w-full mx-auto overflow-hidden rounded-md border bg-muted/20">
         <canvas ref={imageCanvasRef} className="absolute top-0 left-0 w-full h-full" />
         <canvas
           ref={drawingCanvasRef}

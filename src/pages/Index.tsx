@@ -82,10 +82,10 @@ const Index = () => {
     <div ref={containerRef} className="container flex flex-1 flex-col items-center justify-center p-4 md:p-8">
       <div className="text-center max-w-3xl mb-12">
         <h1 className="anim-title text-5xl md:text-6xl font-bold tracking-tight">
-          Your All-in-One <span className="text-primary">AI Image Editing</span> Toolkit
+          AI-Powered Image Editing, <span className="text-primary">Simplified.</span>
         </h1>
         <p className="anim-p mt-6 text-lg md:text-xl text-muted-foreground">
-          From background removal to AI-powered upscaling, ClearCut AI provides a full suite of tools to perfect your images instantly.
+          Instantly remove backgrounds, upscale images, and erase objects with our suite of free AI tools.
         </p>
       </div>
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

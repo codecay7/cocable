@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
 import { Download, Info } from 'lucide-react';
-import { showError, toast } from '@/utils/toast';
+import { showError } from '@/utils/toast';
+import { toast } from 'sonner';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { ReactCompareSliderImage } from 'react-compare-slider';

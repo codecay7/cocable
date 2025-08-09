@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
 import { Loader2, Download, Sparkles, CreditCard } from 'lucide-react';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError } from '@/utils/toast';
+import { toast } from 'sonner';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { ReactCompareSliderImage } from 'react-compare-slider';
@@ -76,12 +77,26 @@ const Upscaler = () => {
 
     if (isPremium && session) {
       try {
-        const { error: functionError } = await supabase.functions.invoke('deduct-credit');
-        if (functionError) throw new Error(functionError.message);
+        const { error: functionError } = await supabase.functions.invoke('deduct-credit', {
+          body: { feature: 'face_correction' }
+        });
+        if (functionError) throw functionError;
         setCredits(c => (c !== null ? c - 1 : null));
-        showSuccess("1 credit used for Face Correction.");
+        toast.success("1 credit used for Face Correction.", {
+          action: (
+            <Button asChild variant="secondary" size="sm">
+              <Link to="/profile">Get More Credits</Link>
+            </Button>
+          ),
+        });
       } catch (e: any) {
-        showError(e.message === 'Insufficient credits' ? "You don't have enough credits." : "Credit deduction failed.");
+        if (e.message.includes('Daily premium feature limit reached')) {
+          showError("You've reached your daily limit of 3 premium features.");
+        } else if (e.message.includes('Insufficient credits')) {
+          showError("You don't have enough credits.");
+        } else {
+          showError("Credit deduction failed. Please try again.");
+        }
         setIsLoading(false);
         return;
       }

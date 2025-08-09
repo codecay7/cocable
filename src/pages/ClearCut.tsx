@@ -6,7 +6,8 @@ import { Loader2, Share2, Wand2, Eye, CreditCard } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError } from '@/utils/toast';
+import { toast } from 'sonner';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { EditPanel } from '@/components/EditPanel';
@@ -89,12 +90,26 @@ const ClearCut = () => {
 
     if (isPremium && session) {
       try {
-        const { error: functionError } = await supabase.functions.invoke('deduct-credit');
-        if (functionError) throw new Error(functionError.message);
+        const { error: functionError } = await supabase.functions.invoke('deduct-credit', {
+          body: { feature: 'high_quality_removal' }
+        });
+        if (functionError) throw functionError;
         setCredits(c => (c !== null ? c - 1 : null));
-        showSuccess("1 credit used for High Quality processing.");
+        toast.success("1 credit used for High Quality processing.", {
+          action: (
+            <Button asChild variant="secondary" size="sm">
+              <Link to="/profile">Get More Credits</Link>
+            </Button>
+          ),
+        });
       } catch (e: any) {
-        showError(e.message === 'Insufficient credits' ? "You don't have enough credits." : "Credit deduction failed.");
+        if (e.message.includes('Daily premium feature limit reached')) {
+          showError("You've reached your daily limit of 3 premium features.");
+        } else if (e.message.includes('Insufficient credits')) {
+          showError("You don't have enough credits.");
+        } else {
+          showError("Credit deduction failed. Please try again.");
+        }
         setIsLoading(false);
         return;
       }

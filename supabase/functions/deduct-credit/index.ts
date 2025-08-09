@@ -7,19 +7,16 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Create a Supabase client with the service role key to perform admin actions
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get the user from the authorization header
     const authHeader = req.headers.get('Authorization')!
     const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''))
 
@@ -30,18 +27,48 @@ serve(async (req) => {
       })
     }
 
-    // Call the secure database function to deduct one credit
-    const { error } = await supabaseAdmin.rpc('deduct_credit', { user_id_param: user.id });
+    const { feature } = await req.json();
+    if (!feature) {
+      return new Response(JSON.stringify({ error: 'Feature name is required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
 
-    if (error) {
-      // Check if the error is due to insufficient credits
-      if (error.message.includes('insufficient_credits')) {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count, error: countError } = await supabaseAdmin
+      .from('premium_usage_log')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('used_at', twentyFourHoursAgo);
+
+    if (countError) throw countError;
+
+    if (count !== null && count >= 3) {
+      return new Response(JSON.stringify({ error: 'Daily premium feature limit reached.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 429, // Too Many Requests
+      });
+    }
+
+    const { error: rpcError } = await supabaseAdmin.rpc('deduct_credit', { user_id_param: user.id });
+
+    if (rpcError) {
+      if (rpcError.message.includes('insufficient_credits')) {
         return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
         });
       }
-      throw error;
+      throw rpcError;
+    }
+
+    const { error: logError } = await supabaseAdmin
+      .from('premium_usage_log')
+      .insert({ user_id: user.id, feature_name: feature });
+
+    if (logError) {
+      console.error('Failed to log premium usage:', logError);
     }
 
     return new Response(JSON.stringify({ message: 'Credit deducted successfully' }), {

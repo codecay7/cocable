@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
@@ -9,18 +9,25 @@ import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
 import { showError } from '@/utils/toast';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
+import { gsap } from 'gsap';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
-  const [processedImage, setProcessedImage] = useState<string | null>(null); // Holds the image with transparent BG
-  const [displayImage, setDisplayImage] = useState<string | null>(null); // Holds the image to be displayed/downloaded
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [displayImage, setDisplayImage] = useState<string | null>(null);
   const [backgroundColor, setBackgroundColor] = useState<string>('transparent');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isShareSupported, setIsShareSupported] = useState(false);
+  const cardRef = useRef(null);
 
   useEffect(() => {
     if (navigator.share) setIsShareSupported(true);
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
+    }, cardRef);
+    return () => ctx.revert();
   }, []);
 
   const applyBackgroundColor = useCallback(async (imageSrc: string, color: string) => {
@@ -144,7 +151,7 @@ const ClearCut = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
-      <Card className="max-w-4xl mx-auto">
+      <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">ClearCut AI Background Remover</CardTitle>
         </CardHeader>

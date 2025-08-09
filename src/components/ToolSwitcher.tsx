@@ -17,12 +17,6 @@ const switcherTools = [
     icon: <ArrowUpRightSquare className="h-6 w-6" />,
   },
   {
-    name: "AI Object Remover",
-    path: "/object-remover",
-    description: "Erase unwanted objects or people from photos.",
-    icon: <Eraser className="h-6 w-6" />,
-  },
-  {
     name: "Batch Background Remover",
     path: "/batch-remover",
     description: "Process dozens of images at once.",

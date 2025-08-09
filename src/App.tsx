@@ -8,7 +8,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ClearCut from "./pages/ClearCut";
 import Upscaler from "./pages/Upscaler";
-import ObjectRemover from "./pages/ObjectRemover";
 import BatchRemover from "./pages/BatchRemover";
 import { Layout } from "./components/Layout";
 
@@ -25,7 +24,6 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/clearcut" element={<ClearCut />} />
             <Route path="/upscaler" element={<Upscaler />} />
-            <Route path="/object-remover" element={<ObjectRemover />} />
             <Route path="/batch-remover" element={<BatchRemover />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

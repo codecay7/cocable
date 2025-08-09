@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
-import { Scissors, ArrowUpRightSquare, Eraser, ImageIcon, CopyPlus, ArrowRight, Layers } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, CopyPlus, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const tools = [
@@ -19,27 +18,6 @@ const tools = [
     path: "/upscaler",
     description: "Increase image resolution by 2x or 4x without losing quality.",
     icon: <ArrowUpRightSquare className="h-8 w-8 mb-4 text-primary" />,
-    status: 'live',
-  },
-  {
-    name: "AI Object Remover",
-    path: "/object-remover",
-    description: "Erase unwanted objects, people, or text from your photos.",
-    icon: <Eraser className="h-8 w-8 mb-4 text-primary" />,
-    status: 'live',
-  },
-  {
-    name: "AI Background Changer",
-    path: "/clearcut",
-    description: "Replace backgrounds with solid colors or custom images.",
-    icon: <ImageIcon className="h-8 w-8 mb-4 text-primary" />,
-    status: 'live',
-  },
-  {
-    name: "Transparent Background Converter",
-    path: "/clearcut",
-    description: "Quickly add a white or black background to transparent PNGs.",
-    icon: <Layers className="h-8 w-8 mb-4 text-primary" />,
     status: 'live',
   },
   {
@@ -62,7 +40,6 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
       <CardHeader>
         {tool.icon}
         <CardTitle>{tool.name}</CardTitle>
-        {tool.status === 'coming_soon' && <Badge variant="secondary" className="absolute top-4 right-4">Coming Soon</Badge>}
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-between">
         <CardDescription>{tool.description}</CardDescription>
@@ -104,7 +81,7 @@ const Index = () => {
           From background removal to AI-powered upscaling, ClearCut AI provides a full suite of tools to perfect your images instantly.
         </p>
       </div>
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
         {tools.map((tool) => (
           <ToolCard key={tool.name} tool={tool} />
         ))}

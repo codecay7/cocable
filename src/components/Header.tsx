@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Scissors, ArrowUpRightSquare, Menu, Eraser, ImageIcon, CopyPlus } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, Menu, Eraser, CopyPlus } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { cn } from '@/lib/utils';
 import {
@@ -22,12 +22,6 @@ const tools = [
     path: "/upscaler",
     description: "Increase image resolution without losing quality.",
     icon: <ArrowUpRightSquare className="h-5 w-5" />,
-  },
-  {
-    name: "AI Object Remover",
-    path: "/object-remover",
-    description: "Erase unwanted objects or people from photos.",
-    icon: <Eraser className="h-5 w-5" />,
   },
   {
     name: "Batch Remover",

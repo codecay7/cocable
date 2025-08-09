@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
+import { ColorPicker } from '@/components/ColorPicker';
 import { Loader2, Share2 } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
@@ -10,69 +11,88 @@ import { showError } from '@/utils/toast';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
-  const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [processedImage, setProcessedImage] = useState<string | null>(null); // Holds the image with transparent BG
+  const [displayImage, setDisplayImage] = useState<string | null>(null); // Holds the image to be displayed/downloaded
+  const [backgroundColor, setBackgroundColor] = useState<string>('transparent');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isShareSupported, setIsShareSupported] = useState(false);
 
   useEffect(() => {
-    // Check for Web Share API support on component mount
-    if (navigator.share) {
-      setIsShareSupported(true);
-    }
+    if (navigator.share) setIsShareSupported(true);
   }, []);
+
+  const applyBackgroundColor = useCallback(async (imageSrc: string, color: string) => {
+    if (color === 'transparent') {
+      return imageSrc;
+    }
+
+    const image = new Image();
+    image.src = imageSrc;
+    await image.decode();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return imageSrc;
+
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0);
+
+    return canvas.toDataURL('image/png');
+  }, []);
+
+  useEffect(() => {
+    if (!processedImage) return;
+
+    const updateDisplayImage = async () => {
+      const newDisplayImage = await applyBackgroundColor(processedImage, backgroundColor);
+      setDisplayImage(newDisplayImage);
+    };
+
+    updateDisplayImage();
+  }, [processedImage, backgroundColor, applyBackgroundColor]);
 
   const handleFileSelect = (file: File) => {
     setOriginalImage(file);
     setProcessedImage(null);
+    setDisplayImage(null);
     setError(null);
+    setBackgroundColor('transparent');
   };
 
   const handleRemoveBackground = async () => {
     if (!originalImage) return;
-
     setIsLoading(true);
     setError(null);
 
     try {
       const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
-      const segmenter = await bodySegmentation.createSegmenter(model, {
-        runtime: 'tfjs',
-      });
-
+      const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs' });
       const imageElement = new Image();
       imageElement.src = URL.createObjectURL(originalImage);
       await imageElement.decode();
-
       const segmentation = await segmenter.segmentPeople(imageElement);
-
       const canvas = document.createElement('canvas');
       canvas.width = imageElement.width;
       canvas.height = imageElement.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
-
-      // Draw the original image first
       ctx.drawImage(imageElement, 0, 0);
-
-      // Create a mask where the person is opaque and the background is transparent
       const foreground = { r: 0, g: 0, b: 0, a: 255 };
       const background = { r: 0, g: 0, b: 0, a: 0 };
       const binaryMask = await bodySegmentation.toBinaryMask(segmentation, foreground, background);
-
       const maskCanvas = document.createElement('canvas');
       maskCanvas.width = imageElement.width;
       maskCanvas.height = imageElement.height;
       const maskCtx = maskCanvas.getContext('2d');
       if (!maskCtx) throw new Error('Could not get mask canvas context');
       maskCtx.putImageData(binaryMask, 0, 0);
-
-      // Use 'destination-in' to clip the original image with the mask
       ctx.globalCompositeOperation = 'destination-in';
       ctx.drawImage(maskCanvas, 0, 0);
-
       setProcessedImage(canvas.toDataURL('image/png'));
-
     } catch (e) {
       console.error("Background removal failed:", e);
       setError("Sorry, we couldn't process this image. It might be an unsupported format or too complex for the AI.");
@@ -82,9 +102,9 @@ const ClearCut = () => {
   };
 
   const handleDownload = () => {
-    if (!processedImage) return;
+    if (!displayImage) return;
     const link = document.createElement('a');
-    link.href = processedImage;
+    link.href = displayImage;
     link.download = 'clearcut-result.png';
     document.body.appendChild(link);
     link.click();
@@ -92,13 +112,11 @@ const ClearCut = () => {
   };
 
   const handleShare = async () => {
-    if (!processedImage) return;
-
+    if (!displayImage) return;
     try {
-      const response = await fetch(processedImage);
+      const response = await fetch(displayImage);
       const blob = await response.blob();
       const file = new File([blob], 'clearcut-result.png', { type: 'image/png' });
-
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -109,8 +127,6 @@ const ClearCut = () => {
         showError("Your browser doesn't support sharing files.");
       }
     } catch (err: any) {
-      console.error('Share failed:', err);
-      // Don't show error if user cancels the share dialog
       if (err.name !== 'AbortError') {
         showError('Sharing failed. Please try downloading the image instead.');
       }
@@ -120,8 +136,10 @@ const ClearCut = () => {
   const handleReset = () => {
     setOriginalImage(null);
     setProcessedImage(null);
+    setDisplayImage(null);
     setError(null);
-  }
+    setBackgroundColor('transparent');
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -130,7 +148,7 @@ const ClearCut = () => {
           <CardTitle className="text-2xl font-bold text-center">ClearCut AI Background Remover</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {!processedImage && (
+          {!displayImage && (
             <div className="space-y-4">
               <ImageUploader onFileSelect={handleFileSelect} />
               {originalImage && (
@@ -139,43 +157,35 @@ const ClearCut = () => {
                   <p className="text-sm text-muted-foreground mt-2">{originalImage.name}</p>
                 </div>
               )}
-              <Button
-                onClick={handleRemoveBackground}
-                disabled={!originalImage || isLoading}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing with AI...
-                  </>
-                ) : (
-                  'Remove Background'
-                )}
+              <Button onClick={handleRemoveBackground} disabled={!originalImage || isLoading} className="w-full" size="lg">
+                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing with AI...</>) : ('Remove Background')}
               </Button>
             </div>
           )}
 
-          {processedImage && (
-            <div className="space-y-4 text-center">
-              <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                <div>
-                  <h4 className="font-medium mb-2">Original</h4>
-                  <img src={URL.createObjectURL(originalImage!)} alt="Original" className="max-h-80 mx-auto rounded-md border" />
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Background Removed</h4>
-                  <img src={processedImage} alt="Background Removed" className="max-h-80 mx-auto rounded-md border bg-[url('data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%2032%2032%27%20size=%2716%2016%27%20fill-opacity=%27.1%27%3e%3cpath%20d=%27M0%200h16v16H0zM16%2016h16v16H16z%27/%3e%3c/svg%3e')]" />
+          {displayImage && (
+            <div className="space-y-6">
+              <div className="space-y-4 text-center">
+                <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  <div>
+                    <h4 className="font-medium mb-2">Original</h4>
+                    <img src={URL.createObjectURL(originalImage!)} alt="Original" className="max-h-80 mx-auto rounded-md border" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2">Result</h4>
+                    <img src={displayImage} alt="Background Removed" className="max-h-80 mx-auto rounded-md border" style={{ background: backgroundColor === 'transparent' ? `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' size='16 16' fill-opacity='.1'%3e%3cpath d='M0 0h16v16H0zM16 16h16v16H16z'/%3e%3c/svg%3e")` : '' }} />
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-wrap justify-center gap-4 pt-4">
+              
+              <ColorPicker onColorChange={setBackgroundColor} selectedColor={backgroundColor} />
+
+              <div className="flex flex-wrap justify-center gap-4 pt-4 border-t">
                 <Button onClick={handleDownload} size="lg">Download Image</Button>
                 {isShareSupported && (
                   <Button onClick={handleShare} size="lg" variant="secondary">
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
+                    <Share2 className="mr-2 h-4 w-4" /> Share
                   </Button>
                 )}
                 <Button onClick={handleReset} variant="outline" size="lg">Process Another Image</Button>

@@ -89,7 +89,7 @@ const Index = () => {
     <div ref={containerRef}>
       <div className="container flex flex-col items-center justify-center text-center py-16 md:py-24">
         <div className="max-w-3xl mb-12">
-          <h1 className="anim-title text-5xl md:text-6xl font-bold tracking-tight">
+          <h1 className="anim-title text-5xl md:text-6xl font-bold tracking-tight font-display">
             AI-Powered Image Editing, <span className="text-primary">Simplified.</span>
           </h1>
           <p className="anim-p mt-6 text-lg md:text-xl text-muted-foreground">

@@ -81,6 +81,17 @@ const Profile = () => {
       }
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
       newAvatarUrl = urlData.publicUrl;
+
+      // Update the user's metadata in Supabase Auth
+      const { error: userUpdateError } = await supabase.auth.updateUser({
+        data: { avatar_url: newAvatarUrl }
+      });
+
+      if (userUpdateError) {
+        showError('Failed to update avatar in user profile.');
+        // Note: The file is already uploaded, but the profile won't reflect it.
+        // A more robust solution might delete the uploaded file here.
+      }
     }
 
     const { error } = await supabase
@@ -128,7 +139,7 @@ const Profile = () => {
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div className="flex items-center gap-6">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : formData?.avatar_url} />
+                    <AvatarImage src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : user?.user_metadata.avatar_url} />
                     <AvatarFallback>{formData?.first_name?.[0] || user?.email?.[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-grow">

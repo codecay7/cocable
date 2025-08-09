@@ -23,6 +23,9 @@ export const UserNav = () => {
   };
 
   const getInitials = () => {
+    if (user?.user_metadata.first_name && user?.user_metadata.last_name) {
+      return `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`;
+    }
     if (user?.email) {
       return user.email.slice(0, 2).toUpperCase();
     }

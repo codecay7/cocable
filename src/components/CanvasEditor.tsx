@@ -2,7 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Eraser, Check, X } from 'lucide-react';
+import { Eraser, Check, X, Undo, Redo, ZoomIn, ZoomOut, Expand } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface CanvasEditorProps {
   imageSrc: string;
@@ -14,7 +15,11 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(20);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [scale, setScale] = useState(1);
 
+  // Initialize canvas with image and set up history
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -27,36 +32,82 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
       canvas.width = image.width;
       canvas.height = image.height;
       ctx.drawImage(image, 0, 0);
+      const dataUrl = canvas.toDataURL('image/png');
+      setHistory([dataUrl]);
+      setHistoryIndex(0);
     };
   }, [imageSrc]);
+
+  const pushHistory = (dataUrl: string) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(dataUrl);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  const restoreFromHistory = (index: number) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !history[index]) return;
+
+    const image = new Image();
+    image.src = history[index];
+    image.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0);
+    };
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      restoreFromHistory(newIndex);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      restoreFromHistory(newIndex);
+    }
+  };
 
   const getCoords = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    if ('touches' in e) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
-      };
-    }
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (clientX - rect.left) / scale,
+      y: (clientY - rect.top) / scale,
     };
   };
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     setIsDrawing(true);
-    draw(e);
+    const { x, y } = getCoords(e);
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
   };
 
   const stopDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
+    if (!isDrawing) return;
     setIsDrawing(false);
     const ctx = canvasRef.current?.getContext('2d');
-    ctx?.beginPath();
+    ctx?.closePath();
+    
+    const canvas = canvasRef.current;
+    if (canvas) {
+      pushHistory(canvas.toDataURL('image/png'));
+    }
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
@@ -73,8 +124,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
 
     ctx.lineTo(x, y);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
   };
 
   const handleSave = () => {
@@ -84,11 +133,67 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
     }
   };
 
+  const handleZoom = (direction: 'in' | 'out') => {
+    setScale(prev => {
+      const newScale = direction === 'in' ? prev * 1.2 : prev / 1.2;
+      return Math.max(0.2, Math.min(newScale, 5)); // Clamp scale between 0.2x and 5x
+    });
+  };
+
+  const resetView = () => {
+    setScale(1);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+      <div className="p-2 md:p-4 border rounded-lg bg-muted/50 space-y-4">
         <h3 className="text-lg font-semibold text-center">Manual Refinement</h3>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={handleUndo} disabled={historyIndex <= 0}>
+                  <Undo className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Undo</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>
+                  <Redo className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Redo</p></TooltipContent>
+            </Tooltip>
+            <div className="h-8 w-px bg-border mx-2"></div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={() => handleZoom('in')}>
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Zoom In</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={() => handleZoom('out')}>
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Zoom Out</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={resetView}>
+                  <Expand className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Reset View</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <div className="flex items-center gap-4 px-4">
           <Eraser className="w-5 h-5" />
           <Label htmlFor="brush-size" className="flex-shrink-0">Brush Size</Label>
           <Slider
@@ -102,7 +207,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
         </div>
       </div>
       
-      <div className="w-full overflow-auto rounded-md border" style={{ maxHeight: '50vh', cursor: 'crosshair' }}>
+      <div className="w-full overflow-auto rounded-md border bg-muted/20" style={{ maxHeight: '50vh', cursor: 'crosshair' }}>
         <canvas
           ref={canvasRef}
           onMouseDown={startDrawing}
@@ -112,7 +217,11 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({ imageSrc, onSave, on
           onTouchStart={startDrawing}
           onTouchEnd={stopDrawing}
           onTouchMove={draw}
-          className="mx-auto"
+          style={{ 
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            touchAction: 'none' // Important for mobile touch events
+          }}
         />
       </div>
 

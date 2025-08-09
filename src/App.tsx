@@ -16,6 +16,10 @@ import Profile from "./pages/Profile";
 import { SessionProvider } from "./contexts/SessionContext";
 import { PurchaseModalProvider, usePurchaseModal } from "./contexts/PurchaseModalContext";
 import { BuyCreditsModal } from "./components/BuyCreditsModal";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Refunds from "./pages/Refunds";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +44,10 @@ const App = () => (
                 <Route path="/batch-remover" element={<BatchRemover />} />
                 <Route path="/object-remover" element={<ObjectRemover />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/refunds" element={<Refunds />} />
+                <Route path="/contact" element={<Contact />} />
               </Route>
               <Route path="/login" element={<Login />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

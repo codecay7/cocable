@@ -58,7 +58,7 @@ export const Footer = () => {
             <ul className="mt-4 space-y-2">
               <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">About</a></li>
               <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Pricing</a></li>
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</a></li>
+              <li><Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
             </ul>
           </div>
 
@@ -66,8 +66,9 @@ export const Footer = () => {
           <div>
             <h3 className="text-sm font-semibold tracking-wider uppercase">Legal</h3>
             <ul className="mt-4 space-y-2">
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</a></li>
+              <li><Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link></li>
+              <li><Link to="/refunds" className="text-sm text-muted-foreground hover:text-primary transition-colors">Cancellations & Refunds</Link></li>
             </ul>
           </div>
         </div>

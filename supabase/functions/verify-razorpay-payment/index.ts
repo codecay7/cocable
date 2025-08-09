@@ -1,19 +1,34 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { createHmac } from "https://deno.land/std@0.190.0/crypto/hmac.ts";
+import { timingSafeEqual } from "https://deno.land/std@0.190.0/crypto/timing_safe_equal.ts";
+import { encodeToString } from "https://deno.land/std@0.190.0/encoding/hex.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')
+const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')!
 
-function verifySignature(body: string, signature: string, secret: string): boolean {
-  const hmac = createHmac("sha256", secret);
-  hmac.update(body);
-  const digest = hmac.toString();
-  return digest === signature;
+async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  const generatedSignature = encodeToString(new Uint8Array(mac));
+
+  try {
+    return timingSafeEqual(
+      new TextEncoder().encode(generatedSignature),
+      new TextEncoder().encode(signature),
+    );
+  } catch {
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -37,7 +52,7 @@ serve(async (req) => {
     const { order_id, payment_id, signature } = await req.json();
     const body = `${order_id}|${payment_id}`;
 
-    const isVerified = verifySignature(body, signature, RAZORPAY_KEY_SECRET!);
+    const isVerified = await verifySignature(body, signature, RAZORPAY_KEY_SECRET);
 
     if (!isVerified) {
       throw new Error('Payment verification failed. Signature mismatch.');

@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Scissors, ArrowUpRightSquare, Menu, Eraser } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, Menu, Eraser, ImageIcon } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { cn } from '@/lib/utils';
 import {
@@ -29,6 +29,12 @@ const tools = [
     description: "Erase unwanted objects or people from photos.",
     icon: <Eraser className="h-5 w-5" />,
   },
+  {
+    name: "AI Background Changer",
+    path: "/clearcut",
+    description: "Swap your background with a color or new image.",
+    icon: <ImageIcon className="h-5 w-5" />,
+  },
 ];
 
 export const Header = () => {
@@ -46,11 +52,12 @@ export const Header = () => {
         <nav className="hidden md:flex items-center space-x-1">
           {tools.map((tool) => (
             <NavLink
-              key={tool.path}
+              key={tool.name}
               to={tool.path}
-              className={({ isActive }) => cn(
+              className={({ isActive, isPending }) => cn(
                 "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50"
+                isActive && tool.path === window.location.pathname ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50",
+                isPending && "opacity-50"
               )}
             >
               {tool.icon}
@@ -80,7 +87,7 @@ export const Header = () => {
                       onClick={() => setIsSheetOpen(false)}
                       className={({ isActive }) => cn(
                         "flex items-start space-x-3 p-3 rounded-md transition-colors",
-                        isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                        isActive && tool.path === window.location.pathname ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
                       )}
                     >
                       <div className="mt-1">{tool.icon}</div>

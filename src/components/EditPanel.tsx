@@ -3,7 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ColorPicker } from './ColorPicker';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Paintbrush, Sparkles } from 'lucide-react';
+import { Paintbrush, Sparkles, ImageIcon } from 'lucide-react';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 interface EditPanelProps {
   onBgChange: (bg: string) => void;
@@ -27,10 +29,23 @@ export const EditPanel: React.FC<EditPanelProps> = ({
   onShadowChange,
   isShadowEnabled,
 }) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        onBgChange(`url(${dataUrl})`);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <Tabs defaultValue="background" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="background"><Paintbrush className="w-4 h-4 mr-2" />Background</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="background"><Paintbrush className="w-4 h-4 mr-2" />Color</TabsTrigger>
+        <TabsTrigger value="image"><ImageIcon className="w-4 h-4 mr-2" />Image</TabsTrigger>
         <TabsTrigger value="effects"><Sparkles className="w-4 h-4 mr-2" />Effects</TabsTrigger>
       </TabsList>
       <TabsContent value="background" className="mt-4">
@@ -50,6 +65,23 @@ export const EditPanel: React.FC<EditPanelProps> = ({
                 />
               ))}
             </div>
+          </div>
+        </div>
+      </TabsContent>
+      <TabsContent value="image" className="mt-4">
+        <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+          <Label htmlFor="bg-upload" className="font-medium text-center block">Upload a Custom Background</Label>
+          <Input
+            id="bg-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+          />
+          <p className="text-xs text-muted-foreground text-center">Or use a quick preset for your product.</p>
+          <div className="flex justify-center gap-2">
+            <Button onClick={() => onBgChange('#FFFFFF')} variant="outline">White Background</Button>
+            <Button onClick={() => onBgChange('#000000')} variant="outline">Black Background</Button>
           </div>
         </div>
       </TabsContent>

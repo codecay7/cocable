@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { Scissors, ArrowUpRightSquare, Eraser, ImageIcon, CopyPlus, ArrowRight } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, Eraser, ImageIcon, CopyPlus, ArrowRight, Layers } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -30,10 +30,17 @@ const tools = [
   },
   {
     name: "AI Background Changer",
-    path: "#",
+    path: "/clearcut",
     description: "Replace backgrounds with solid colors or custom images.",
     icon: <ImageIcon className="h-8 w-8 mb-4 text-primary" />,
-    status: 'coming_soon',
+    status: 'live',
+  },
+  {
+    name: "Transparent Background Converter",
+    path: "/clearcut",
+    description: "Quickly add a white or black background to transparent PNGs.",
+    icon: <Layers className="h-8 w-8 mb-4 text-primary" />,
+    status: 'live',
   },
   {
     name: "Batch Background Removal",
@@ -44,7 +51,7 @@ const tools = [
   }
 ];
 
-const ToolCard = ({ tool, index }: { tool: typeof tools[0], index: number }) => {
+const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
   const isLive = tool.status === 'live';
 
   const cardContent = (
@@ -97,9 +104,9 @@ const Index = () => {
           From background removal to AI-powered upscaling, ClearCut AI provides a full suite of tools to perfect your images instantly.
         </p>
       </div>
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tools.map((tool, index) => (
-          <ToolCard key={tool.name} tool={tool} index={index} />
+      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {tools.map((tool) => (
+          <ToolCard key={tool.name} tool={tool} />
         ))}
       </div>
     </div>

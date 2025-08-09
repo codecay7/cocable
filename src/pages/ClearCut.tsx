@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2, Share2 } from 'lucide-react';
+import { Loader2, Share2, Wand2 } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
@@ -10,7 +10,10 @@ import { showError } from '@/utils/toast';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { EditPanel } from '@/components/EditPanel';
+import { CanvasEditor } from '@/components/CanvasEditor';
 import { ReactCompareSliderImage } from 'react-compare-slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -20,6 +23,8 @@ const ClearCut = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isShareSupported, setIsShareSupported] = useState(false);
+  const [quality, setQuality] = useState<'general' | 'landscape'>('general');
+  const [isRefining, setIsRefining] = useState(false);
   const cardRef = useRef(null);
 
   useEffect(() => {
@@ -36,6 +41,7 @@ const ClearCut = () => {
     setError(null);
     setBackground('transparent');
     setIsShadowEnabled(false);
+    setIsRefining(false);
   };
 
   const handleRemoveBackground = async () => {
@@ -44,7 +50,7 @@ const ClearCut = () => {
     setError(null);
     try {
       const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
-      const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs' });
+      const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs', modelType: quality });
       const imageElement = new Image();
       imageElement.src = URL.createObjectURL(originalImage);
       await imageElement.decode();
@@ -92,8 +98,7 @@ const ClearCut = () => {
       ctx.fillStyle = background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else if (background.includes('gradient')) {
-      // Canvas doesn't support CSS gradients directly for download.
-      // For now, we'll download with a transparent background if a gradient is selected.
+      // For now, download with transparent bg for gradients
     }
 
     if (isShadowEnabled) {
@@ -151,6 +156,7 @@ const ClearCut = () => {
     setError(null);
     setBackground('transparent');
     setIsShadowEnabled(false);
+    setIsRefining(false);
   };
 
   const modifiedImage = processedImage && (
@@ -177,9 +183,18 @@ const ClearCut = () => {
             <div className="space-y-4">
               <ImageUploader onFileSelect={handleFileSelect} />
               {originalImage && (
-                <div className="text-center p-4 border rounded-lg">
+                <div className="text-center p-4 border rounded-lg space-y-4">
                   <img src={URL.createObjectURL(originalImage)} alt="Preview" className="max-h-60 mx-auto rounded-md" />
                   <p className="text-sm text-muted-foreground mt-2">{originalImage.name}</p>
+                  <div className="flex items-center justify-center space-x-2">
+                    <Label htmlFor="quality-switch">Standard</Label>
+                    <Switch
+                      id="quality-switch"
+                      checked={quality === 'landscape'}
+                      onCheckedChange={(checked) => setQuality(checked ? 'landscape' : 'general')}
+                    />
+                    <Label htmlFor="quality-switch" className="font-semibold text-primary">High Quality</Label>
+                  </div>
                 </div>
               )}
               <Button onClick={handleRemoveBackground} disabled={!originalImage || isLoading} className="w-full" size="lg">
@@ -189,32 +204,46 @@ const ClearCut = () => {
           )}
 
           {processedImage && (
-            <div className="space-y-6">
-              <div className="space-y-4 text-center">
-                <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
-                <ComparisonSlider
-                  original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage!)} alt="Original Image" />}
-                  modified={modifiedImage}
-                />
-              </div>
-              
-              <EditPanel 
-                onBgChange={setBackground}
-                selectedBg={background}
-                onShadowChange={setIsShadowEnabled}
-                isShadowEnabled={isShadowEnabled}
+            isRefining ? (
+              <CanvasEditor 
+                imageSrc={processedImage}
+                onSave={(dataUrl) => {
+                  setProcessedImage(dataUrl);
+                  setIsRefining(false);
+                }}
+                onCancel={() => setIsRefining(false)}
               />
-
-              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 border-t">
-                <Button onClick={handleDownload} size="lg" className="flex-1">Download Image</Button>
-                {isShareSupported && (
-                  <Button onClick={handleShare} size="lg" variant="secondary" className="flex-1">
-                    <Share2 className="mr-2 h-4 w-4" /> Share
+            ) : (
+              <div className="space-y-6">
+                <div className="space-y-4 text-center">
+                  <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
+                  <ComparisonSlider
+                    original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage!)} alt="Original Image" />}
+                    modified={modifiedImage}
+                  />
+                  <Button onClick={() => setIsRefining(true)} variant="secondary">
+                    <Wand2 className="mr-2 h-4 w-4" /> Refine Manually
                   </Button>
-                )}
-                <Button onClick={handleReset} variant="outline" size="lg" className="flex-1">Process Another</Button>
+                </div>
+                
+                <EditPanel 
+                  onBgChange={setBackground}
+                  selectedBg={background}
+                  onShadowChange={setIsShadowEnabled}
+                  isShadowEnabled={isShadowEnabled}
+                />
+
+                <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 border-t">
+                  <Button onClick={handleDownload} size="lg" className="flex-1">Download Image</Button>
+                  {isShareSupported && (
+                    <Button onClick={handleShare} size="lg" variant="secondary" className="flex-1">
+                      <Share2 className="mr-2 h-4 w-4" /> Share
+                    </Button>
+                  )}
+                  <Button onClick={handleReset} variant="outline" size="lg" className="flex-1">Process Another</Button>
+                </div>
               </div>
-            </div>
+            )
           )}
 
           {error && <p className="text-destructive text-center">{error}</p>}

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { MultiImageUploader } from '@/components/MultiImageUploader';
 import { FileQueueItem } from '@/components/FileQueueItem';
-import { Loader2, Download, Play, Trash2 } from 'lucide-react';
+import { Loader2, Download, Play, Trash2, CreditCard } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
@@ -13,6 +13,8 @@ import JSZip from 'jszip';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
+import { toast } from 'sonner';
 
 export interface QueueFile {
   id: string;
@@ -26,12 +28,30 @@ export interface QueueFile {
 const BatchRemover = () => {
   const [queue, setQueue] = useState<QueueFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
-  const { session } = useSession();
+  const { session, user } = useSession();
+  const { openModal } = usePurchaseModal();
 
   useEffect(() => {
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      const fetchCredits = async () => {
+        const { data, error } = await supabase
+          .from('user_credits')
+          .select('credits')
+          .eq('user_id', user.id)
+          .single();
+        if (!error && data) {
+          setCredits(data.credits);
+        }
+      };
+      fetchCredits();
+    }
+  }, [user]);
 
   const handleFilesSelect = (files: File[]) => {
     if (!session) {
@@ -56,13 +76,6 @@ const BatchRemover = () => {
     
     let progressInterval: NodeJS.Timeout;
     try {
-      // Check free usage limit for each file
-      const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
-        body: { feature: 'free_batch_removal' }
-      });
-      if (functionError) throw new Error(functionError.message);
-
-      // Simulate processing time with a progress bar
       let progress = 0;
       progressInterval = setInterval(() => {
         progress += 5;
@@ -100,19 +113,57 @@ const BatchRemover = () => {
     } catch (e: any) {
       console.error("Batch processing failed for a file:", e);
       clearInterval(progressInterval!);
-      const errorMessage = e.message.includes('daily limit') ? e.message : 'Processing failed';
-      setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'error', error: errorMessage } : f));
+      setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'error', error: 'Processing failed' } : f));
     }
   };
 
   const handleProcessBatch = async () => {
+    const filesToProcess = queue.filter(f => f.status === 'queued');
+    if (filesToProcess.length === 0) {
+      showError("No new files in the queue to process.");
+      return;
+    }
+
+    const creditsNeeded = Math.ceil(filesToProcess.length / 2);
+
+    if (credits === null || credits < creditsNeeded) {
+      showError(`You need ${creditsNeeded} credits for this batch, but you only have ${credits ?? 0}.`);
+      openModal();
+      return;
+    }
+
     setIsProcessing(true);
-    for (const file of queue) {
-      if (file.status === 'queued') {
+    try {
+      const { error: functionError } = await supabase.functions.invoke('deduct-credits-for-batch', {
+        body: { 
+          creditsToDeduct: creditsNeeded,
+          feature: 'batch_background_removal',
+          imageCount: filesToProcess.length
+        }
+      });
+
+      if (functionError) {
+        if (functionError.message.includes('Insufficient credits')) {
+          showError("You don't have enough credits for this batch.");
+          openModal();
+        } else {
+          throw functionError;
+        }
+        setIsProcessing(false);
+        return;
+      }
+
+      setCredits(c => (c !== null ? c - creditsNeeded : null));
+      toast.success(`${creditsNeeded} credit(s) used for processing ${filesToProcess.length} images.`);
+
+      for (const file of filesToProcess) {
         await processFile(file);
       }
+    } catch (error: any) {
+      showError(`An error occurred: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
     }
-    setIsProcessing(false);
   };
 
   const handleDownloadAll = async () => {
@@ -149,14 +200,15 @@ const BatchRemover = () => {
   const totalFiles = queue.length;
   const doneCount = queue.filter(f => f.status === 'done').length;
   const isQueueEmpty = totalFiles === 0;
-  const hasQueuedFiles = queue.some(f => f.status === 'queued');
+  const filesToProcessCount = queue.filter(f => f.status === 'queued').length;
+  const creditsNeeded = Math.ceil(filesToProcessCount / 2);
 
   return (
     <div className="container mx-auto p-4 md:p-8">
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Batch Background Remover</CardTitle>
-          <CardDescription>Process dozens of images at once. Upload your files and start the batch.</CardDescription>
+          <CardDescription>A premium feature to process dozens of images at once. Costs 1 credit per 2 images.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!session ? (
@@ -175,10 +227,15 @@ const BatchRemover = () => {
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border rounded-lg bg-muted/50">
                     <div className="text-center sm:text-left">
                       <p className="font-semibold">{totalFiles} files in queue, {doneCount} processed.</p>
-                      <p className="text-sm text-muted-foreground">Each image counts as one free use against your daily limit.</p>
+                      {filesToProcessCount > 0 && (
+                        <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                          <p className="flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" /> This batch will cost <span className="font-bold text-primary">{creditsNeeded}</span> credit(s).</p>
+                          <p>You have <span className="font-bold text-primary">{credits ?? '...'}</span> credits remaining.</p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={handleProcessBatch} disabled={isProcessing || !hasQueuedFiles}>
+                      <Button onClick={handleProcessBatch} disabled={isProcessing || filesToProcessCount === 0}>
                         {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                         {isProcessing ? 'Processing...' : 'Start Batch'}
                       </Button>

@@ -1,9 +1,9 @@
 import React from 'react';
-import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
+import { ReactCompareSlider } from 'react-compare-slider';
 
 interface ComparisonSliderProps {
-  original: string;
-  modified: string;
+  original: React.ReactNode;
+  modified: React.ReactNode;
 }
 
 export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({ original, modified }) => {
@@ -15,8 +15,8 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({ original, mo
       }}
     >
       <ReactCompareSlider
-        itemOne={<ReactCompareSliderImage src={original} alt="Original Image" />}
-        itemTwo={<ReactCompareSliderImage src={modified} alt="Result" />}
+        itemOne={original}
+        itemTwo={modified}
         className="max-h-[500px]"
       />
     </div>

@@ -44,10 +44,10 @@ const tools = [
   },
   {
     name: "Batch Background Removal",
-    path: "#",
+    path: "/batch-remover",
     description: "Process dozens of images at once to save time.",
     icon: <CopyPlus className="h-8 w-8 mb-4 text-primary" />,
-    status: 'coming_soon',
+    status: 'live',
   }
 ];
 

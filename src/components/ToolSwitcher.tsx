@@ -1,6 +1,6 @@
 import { useLocation, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Scissors, ArrowUpRightSquare, Eraser, ImageIcon } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, Eraser, CopyPlus } from 'lucide-react';
 
 const switcherTools = [
   {
@@ -20,6 +20,12 @@ const switcherTools = [
     path: "/object-remover",
     description: "Erase unwanted objects or people from photos.",
     icon: <Eraser className="h-6 w-6" />,
+  },
+  {
+    name: "Batch Background Remover",
+    path: "/batch-remover",
+    description: "Process dozens of images at once.",
+    icon: <CopyPlus className="h-6 w-6" />,
   },
 ];
 

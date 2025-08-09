@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Scissors, ArrowUpRightSquare, Menu, Eraser, ImageIcon } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, Menu, Eraser, ImageIcon, CopyPlus } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { cn } from '@/lib/utils';
 import {
@@ -30,10 +30,10 @@ const tools = [
     icon: <Eraser className="h-5 w-5" />,
   },
   {
-    name: "AI Background Changer",
-    path: "/clearcut",
-    description: "Swap your background with a color or new image.",
-    icon: <ImageIcon className="h-5 w-5" />,
+    name: "Batch Remover",
+    path: "/batch-remover",
+    description: "Process dozens of images at once.",
+    icon: <CopyPlus className="h-5 w-5" />,
   },
 ];
 

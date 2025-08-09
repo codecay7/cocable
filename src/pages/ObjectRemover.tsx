@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Download } from 'lucide-react';
-import { showError } from '@/utils/toast';
+import { Download, Info } from 'lucide-react';
+import { showError, toast } from '@/utils/toast';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { ReactCompareSliderImage } from 'react-compare-slider';
@@ -11,41 +11,85 @@ import { MarkingCanvas } from '@/components/MarkingCanvas';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ObjectRemover = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
-  const [isCheckingUsage, setIsCheckingUsage] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
-  const { session } = useSession();
+  const { session, user } = useSession();
+  const { openModal } = usePurchaseModal();
 
   useEffect(() => {
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
 
-  const handleFileSelect = async (file: File) => {
+  useEffect(() => {
+    if (user) {
+      const fetchCredits = async () => {
+        const { data, error } = await supabase
+          .from('user_credits')
+          .select('credits')
+          .eq('user_id', user.id)
+          .single();
+        if (!error && data) setCredits(data.credits);
+      };
+      fetchCredits();
+    }
+  }, [user]);
+
+  const handleFileSelect = (file: File) => {
+    setOriginalImage(file);
+    setOriginalImageUrl(URL.createObjectURL(file));
+    setProcessedImage(null);
+  };
+
+  const startProcessing = async () => {
+    if (!originalImage) return;
     if (!session) {
-      showError("Please log in to use this feature.");
+      showError("Please log in to process images.");
       return;
     }
 
-    setIsCheckingUsage(true);
+    setIsProcessing(true);
     try {
-      const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
-        body: { feature: 'free_object_remover' }
+      const { data, error: functionError } = await supabase.functions.invoke('process-feature-use', {
+        body: { feature: 'object_remover' }
       });
+
       if (functionError) {
-        showError(functionError.message);
-        return;
+        if (functionError.message.includes('Insufficient credits')) {
+          showError("Your daily free uses are over. You need credits to continue.");
+          openModal();
+        } else {
+          showError(functionError.message || "An error occurred checking your usage.");
+        }
+        throw new Error("Usage check failed");
       }
-      setOriginalImage(file);
-      setOriginalImageUrl(URL.createObjectURL(file));
-      setProcessedImage(null);
+
+      if (data.status === 'paid_use_logged') {
+        toast.success("1 credit used.");
+        setCredits(c => (c !== null ? c - 1 : null));
+      } else if (data.status === 'free_use_logged') {
+        toast.info(`Free use! You have ${data.remaining_free} free uses left today.`);
+      }
+
+      // This is a mock processing call. The actual "processing" happens in MarkingCanvas
+      // We pass a function to MarkingCanvas to call when it's done.
+      return true;
+
     } catch (e: any) {
-      showError(e.message);
+      if (e.message !== "Usage check failed") {
+        showError("An error occurred during processing.");
+        console.error("Object removal failed:", e);
+      }
+      return false;
     } finally {
-      setIsCheckingUsage(false);
+      setIsProcessing(false);
     }
   };
 
@@ -89,10 +133,23 @@ const ObjectRemover = () => {
             </div>
           )}
 
-          {session && !originalImage && <ImageUploader onFileSelect={handleFileSelect} disabled={isCheckingUsage} />}
+          {session && !originalImage && <ImageUploader onFileSelect={handleFileSelect} />}
 
           {originalImageUrl && !processedImage && (
-            <MarkingCanvas imageSrc={originalImageUrl} onComplete={handleComplete} />
+            <>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  You get 3 free uses per day across all tools. After that, each use costs 1 credit. Your credits: <strong>{credits ?? '...'}</strong>
+                </AlertDescription>
+              </Alert>
+              <MarkingCanvas 
+                imageSrc={originalImageUrl} 
+                onComplete={handleComplete} 
+                onProcessStart={startProcessing}
+                isProcessing={isProcessing}
+              />
+            </>
           )}
 
           {originalImageUrl && processedImage && (

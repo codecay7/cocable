@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2, Share2, Wand2, Eye, CreditCard } from 'lucide-react';
+import { Loader2, Share2, Wand2, Eye, Info } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
@@ -20,6 +20,7 @@ import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -39,10 +40,7 @@ const ClearCut = () => {
 
   useEffect(() => {
     if (navigator.share) setIsShareSupported(true);
-    const ctx = gsap.context(() => {
-      gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
-    }, cardRef);
-    return () => ctx.revert();
+    gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
 
   useEffect(() => {
@@ -53,9 +51,7 @@ const ClearCut = () => {
           .select('credits')
           .eq('user_id', user.id)
           .single();
-        if (!error && data) {
-          setCredits(data.credits);
-        }
+        if (!error && data) setCredits(data.credits);
       };
       fetchCredits();
     }
@@ -73,9 +69,6 @@ const ClearCut = () => {
 
   const handleRemoveBackground = async () => {
     if (!originalImage) return;
-
-    const isPremium = quality === 'landscape';
-
     if (!session) {
       showError("Please log in to process images.");
       return;
@@ -85,31 +78,27 @@ const ClearCut = () => {
     setError(null);
 
     try {
-      if (isPremium) {
-        if (credits === null || credits < 1) {
-          throw new Error("Insufficient credits");
+      const { data, error: functionError } = await supabase.functions.invoke('process-feature-use', {
+        body: { feature: `clearcut_${quality}` }
+      });
+
+      if (functionError) {
+        if (functionError.message.includes('Insufficient credits')) {
+          showError("Your daily free uses are over. You need credits to continue.");
+          openModal();
+        } else {
+          showError(functionError.message || "An error occurred checking your usage.");
         }
-        const { error: functionError } = await supabase.functions.invoke('deduct-credit', {
-          body: { feature: 'high_quality_removal' }
-        });
-        if (functionError) throw functionError;
-        setCredits(c => (c !== null ? c - 1 : null));
-        toast.success("1 credit used for High Quality processing.", {
-          action: (
-            <Button onClick={openModal} variant="secondary" size="sm">
-              Get More Credits
-            </Button>
-          ),
-        });
-      } else {
-        // Check free usage limit
-        const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
-          body: { feature: 'free_background_removal' }
-        });
-        if (functionError) throw functionError;
+        throw new Error("Usage check failed");
       }
 
-      // Proceed with image processing
+      if (data.status === 'paid_use_logged') {
+        toast.success("1 credit used.");
+        setCredits(c => (c !== null ? c - 1 : null));
+      } else if (data.status === 'free_use_logged') {
+        toast.info(`Free use! You have ${data.remaining_free} free uses left today.`);
+      }
+
       const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
       const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs', modelType: quality });
       const imageElement = new Image();
@@ -123,8 +112,8 @@ const ClearCut = () => {
       if (!ctx) throw new Error('Could not get canvas context');
       ctx.drawImage(imageElement, 0, 0);
       const foreground = { r: 0, g: 0, b: 0, a: 255 };
-      const background = { r: 0, g: 0, b: 0, a: 0 };
-      const binaryMask = await bodySegmentation.toBinaryMask(segmentation, foreground, background);
+      const backgroundMask = { r: 0, g: 0, b: 0, a: 0 };
+      const binaryMask = await bodySegmentation.toBinaryMask(segmentation, foreground, backgroundMask);
       const maskCanvas = document.createElement('canvas');
       maskCanvas.width = imageElement.width;
       maskCanvas.height = imageElement.height;
@@ -136,14 +125,7 @@ const ClearCut = () => {
       setProcessedImage(canvas.toDataURL('image/png'));
 
     } catch (e: any) {
-      if (e.message.includes('Daily premium feature limit reached')) {
-        showError("You've reached your daily limit of 3 premium features.");
-      } else if (e.message.includes('Insufficient credits')) {
-        showError("You don't have enough credits for this premium feature.");
-        openModal();
-      } else if (e.message.includes('daily limit')) {
-        showError(e.message);
-      } else {
+      if (e.message !== "Usage check failed") {
         setError("Sorry, we couldn't process this image. It might be an unsupported format or too complex for the AI.");
         console.error("Background removal failed:", e);
       }
@@ -286,6 +268,7 @@ const ClearCut = () => {
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">ClearCut AI Background Remover</CardTitle>
+          <CardDescription className="text-center">Remove the background from any image. High Quality provides better results for complex scenes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!processedImage && (
@@ -304,14 +287,16 @@ const ClearCut = () => {
                     />
                     <Label htmlFor="quality-switch" className="font-semibold text-primary flex items-center gap-2">
                       High Quality
-                      <Badge variant="secondary" className="text-yellow-500 border-yellow-500/50">Premium</Badge>
+                      <Badge variant="secondary">Better Detail</Badge>
                     </Label>
                   </div>
-                  {session && quality === 'landscape' && (
-                    <div className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      <span>{credits ?? '...'} credits remaining. This will use 1 credit.</span>
-                    </div>
+                  {session && (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        You get 3 free uses per day across all tools. After that, each use costs 1 credit. Your credits: <strong>{credits ?? '...'}</strong>
+                      </AlertDescription>
+                    </Alert>
                   )}
                   {!session && (
                     <Button asChild variant="link">

@@ -8,9 +8,11 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 interface MarkingCanvasProps {
   imageSrc: string;
   onComplete: (dataUrl: string) => void;
+  onProcessStart: () => Promise<boolean>;
+  isProcessing: boolean;
 }
 
-export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComplete }) => {
+export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComplete, onProcessStart, isProcessing }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -19,7 +21,7 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
   const [brushSize, setBrushSize] = useState(40);
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
 
   const getRelativeCoords = (event: React.MouseEvent | React.TouchEvent) => {
     const canvas = drawingCanvasRef.current;
@@ -147,13 +149,16 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
   };
 
   const handleRemoveObjects = async () => {
-    setIsProcessing(true);
+    const canProcess = await onProcessStart();
+    if (!canProcess) return;
+
+    setIsApplying(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const imageCanvas = imageCanvasRef.current;
     const drawingCanvas = drawingCanvasRef.current;
     if (!imageCanvas || !drawingCanvas) {
-      setIsProcessing(false);
+      setIsApplying(false);
       return;
     }
 
@@ -162,7 +167,7 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
     finalCanvas.height = imageCanvas.height;
     const finalCtx = finalCanvas.getContext('2d');
     if (!finalCtx) {
-      setIsProcessing(false);
+      setIsApplying(false);
       return;
     }
 
@@ -171,7 +176,7 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
     blurCanvas.height = imageCanvas.height;
     const blurCtx = blurCanvas.getContext('2d');
     if (!blurCtx) {
-      setIsProcessing(false);
+      setIsApplying(false);
       return;
     }
     blurCtx.filter = 'blur(25px)';
@@ -186,8 +191,10 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
     finalCtx.globalCompositeOperation = 'source-over';
 
     onComplete(finalCanvas.toDataURL('image/png'));
-    setIsProcessing(false);
+    setIsApplying(false);
   };
+
+  const totalProcessing = isProcessing || isApplying;
 
   return (
     <div className="space-y-4">
@@ -223,9 +230,9 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
         />
       </div>
 
-      <Button onClick={handleRemoveObjects} disabled={isProcessing} className="w-full" size="lg">
-        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-        {isProcessing ? 'Applying AI Magic...' : 'Remove Marked Objects'}
+      <Button onClick={handleRemoveObjects} disabled={totalProcessing} className="w-full" size="lg">
+        {totalProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+        {isProcessing ? 'Checking usage...' : isApplying ? 'Applying AI Magic...' : 'Remove Marked Objects'}
       </Button>
     </div>
   );

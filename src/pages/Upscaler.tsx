@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { Loader2, Download, Sparkles, CreditCard } from 'lucide-react';
+import { Loader2, Download, Sparkles, Info } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { toast } from 'sonner';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
@@ -16,6 +16,7 @@ import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -30,10 +31,7 @@ const Upscaler = () => {
   const { openModal } = usePurchaseModal();
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
-    }, cardRef);
-    return () => ctx.revert();
+    gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
 
   useEffect(() => {
@@ -44,9 +42,7 @@ const Upscaler = () => {
           .select('credits')
           .eq('user_id', user.id)
           .single();
-        if (!error && data) {
-          setCredits(data.credits);
-        }
+        if (!error && data) setCredits(data.credits);
       };
       fetchCredits();
     }
@@ -60,9 +56,6 @@ const Upscaler = () => {
 
   const handleUpscale = async () => {
     if (!originalImage) return;
-
-    const isPremium = faceCorrect;
-
     if (!session) {
       showError("Please log in to process images.");
       return;
@@ -72,30 +65,27 @@ const Upscaler = () => {
     setError(null);
 
     try {
-      if (isPremium) {
-        if (credits === null || credits < 1) {
-          throw new Error("Insufficient credits");
+      const { data, error: functionError } = await supabase.functions.invoke('process-feature-use', {
+        body: { feature: `upscaler_${scaleFactor}x${faceCorrect ? '_face-correct' : ''}` }
+      });
+
+      if (functionError) {
+        if (functionError.message.includes('Insufficient credits')) {
+          showError("Your daily free uses are over. You need credits to continue.");
+          openModal();
+        } else {
+          showError(functionError.message || "An error occurred checking your usage.");
         }
-        const { error: functionError } = await supabase.functions.invoke('deduct-credit', {
-          body: { feature: 'face_correction' }
-        });
-        if (functionError) throw functionError;
+        throw new Error("Usage check failed");
+      }
+
+      if (data.status === 'paid_use_logged') {
+        toast.success("1 credit used.");
         setCredits(c => (c !== null ? c - 1 : null));
-        toast.success("1 credit used for Face Correction.", {
-          action: (
-            <Button onClick={openModal} variant="secondary" size="sm">
-              Get More Credits
-            </Button>
-          ),
-        });
-      } else {
-        const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
-          body: { feature: 'free_upscale' }
-        });
-        if (functionError) throw functionError;
+      } else if (data.status === 'free_use_logged') {
+        toast.info(`Free use! You have ${data.remaining_free} free uses left today.`);
       }
       
-      // Simulate AI processing
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       const imageElement = new Image();
@@ -119,14 +109,7 @@ const Upscaler = () => {
       
       setUpscaledImage(canvas.toDataURL('image/png'));
     } catch (e: any) {
-      if (e.message.includes('Daily premium feature limit reached')) {
-        showError("You've reached your daily limit of 3 premium features.");
-      } else if (e.message.includes('Insufficient credits')) {
-        showError("You don't have enough credits for this premium feature.");
-        openModal();
-      } else if (e.message.includes('daily limit')) {
-        showError(e.message);
-      } else {
+      if (e.message !== "Usage check failed") {
         setError("Sorry, we couldn't process this image.");
         console.error("Upscaling failed:", e);
       }
@@ -159,7 +142,7 @@ const Upscaler = () => {
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">AI Image Upscaler</CardTitle>
-          <CardDescription>Increase image resolution by 2x or 4x without losing quality.</CardDescription>
+          <CardDescription>Increase image resolution by 2x or 4x. Face Correction enhances facial details.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!upscaledImage && (
@@ -184,15 +167,17 @@ const Upscaler = () => {
                       <Switch id="face-correct" checked={faceCorrect} onCheckedChange={setFaceCorrect} />
                       <Label htmlFor="face-correct" className="flex items-center gap-2">
                         <span className="flex items-center gap-1"><Sparkles className="w-4 h-4 text-yellow-400" /> Face Correction</span>
-                        <Badge variant="secondary" className="text-yellow-500 border-yellow-500/50">Premium</Badge>
+                        <Badge variant="secondary">Better Faces</Badge>
                       </Label>
                     </div>
                   </div>
-                   {session && faceCorrect && (
-                    <div className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      <span>{credits ?? '...'} credits remaining. This will use 1 credit.</span>
-                    </div>
+                   {session && (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        You get 3 free uses per day across all tools. After that, each use costs 1 credit. Your credits: <strong>{credits ?? '...'}</strong>
+                      </AlertDescription>
+                    </Alert>
                   )}
                   {!session && (
                     <Button asChild variant="link">

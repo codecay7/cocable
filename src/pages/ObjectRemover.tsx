@@ -8,21 +8,45 @@ import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
 import { ReactCompareSliderImage } from 'react-compare-slider';
 import { MarkingCanvas } from '@/components/MarkingCanvas';
+import { useSession } from '@/hooks/useSession';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 const ObjectRemover = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [isCheckingUsage, setIsCheckingUsage] = useState(false);
   const cardRef = useRef(null);
+  const { session } = useSession();
 
   useEffect(() => {
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
 
-  const handleFileSelect = (file: File) => {
-    setOriginalImage(file);
-    setOriginalImageUrl(URL.createObjectURL(file));
-    setProcessedImage(null);
+  const handleFileSelect = async (file: File) => {
+    if (!session) {
+      showError("Please log in to use this feature.");
+      return;
+    }
+
+    setIsCheckingUsage(true);
+    try {
+      const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
+        body: { feature: 'free_object_remover' }
+      });
+      if (functionError) {
+        showError(functionError.message);
+        return;
+      }
+      setOriginalImage(file);
+      setOriginalImageUrl(URL.createObjectURL(file));
+      setProcessedImage(null);
+    } catch (e: any) {
+      showError(e.message);
+    } finally {
+      setIsCheckingUsage(false);
+    }
   };
 
   const handleComplete = (dataUrl: string) => {
@@ -56,7 +80,16 @@ const ObjectRemover = () => {
           <CardDescription>Erase unwanted objects, people, or text from your photos in seconds.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {!originalImage && <ImageUploader onFileSelect={handleFileSelect} />}
+          {!session && (
+            <div className="text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground">You need to be logged in to use the Object Remover.</p>
+              <Button asChild>
+                <Link to="/login">Login or Sign Up</Link>
+              </Button>
+            </div>
+          )}
+
+          {session && !originalImage && <ImageUploader onFileSelect={handleFileSelect} disabled={isCheckingUsage} />}
 
           {originalImageUrl && !processedImage && (
             <MarkingCanvas imageSrc={originalImageUrl} onComplete={handleComplete} />

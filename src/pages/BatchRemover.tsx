@@ -10,6 +10,9 @@ import '@tensorflow/tfjs-backend-webgl';
 import { showError } from '@/utils/toast';
 import { gsap } from 'gsap';
 import JSZip from 'jszip';
+import { useSession } from '@/hooks/useSession';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 export interface QueueFile {
   id: string;
@@ -24,12 +27,17 @@ const BatchRemover = () => {
   const [queue, setQueue] = useState<QueueFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const cardRef = useRef(null);
+  const { session } = useSession();
 
   useEffect(() => {
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
 
   const handleFilesSelect = (files: File[]) => {
+    if (!session) {
+      showError("Please log in to use the batch processing feature.");
+      return;
+    }
     const newQueueFiles: QueueFile[] = files.map(file => ({
       id: `${file.name}-${file.lastModified}`,
       file,
@@ -48,6 +56,12 @@ const BatchRemover = () => {
     
     let progressInterval: NodeJS.Timeout;
     try {
+      // Check free usage limit for each file
+      const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
+        body: { feature: 'free_batch_removal' }
+      });
+      if (functionError) throw new Error(functionError.message);
+
       // Simulate processing time with a progress bar
       let progress = 0;
       progressInterval = setInterval(() => {
@@ -83,10 +97,11 @@ const BatchRemover = () => {
       
       clearInterval(progressInterval);
       setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'done', progress: 100, result: canvas.toDataURL('image/png') } : f));
-    } catch (e) {
+    } catch (e: any) {
       console.error("Batch processing failed for a file:", e);
       clearInterval(progressInterval!);
-      setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'error', error: 'Processing failed' } : f));
+      const errorMessage = e.message.includes('daily limit') ? e.message : 'Processing failed';
+      setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'error', error: errorMessage } : f));
     }
   };
 
@@ -144,36 +159,47 @@ const BatchRemover = () => {
           <CardDescription>Process dozens of images at once. Upload your files and start the batch.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <MultiImageUploader onFilesSelect={handleFilesSelect} disabled={isProcessing} />
-          
-          {!isQueueEmpty && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border rounded-lg bg-muted/50">
-                <div className="text-center sm:text-left">
-                  <p className="font-semibold">{totalFiles} files in queue, {doneCount} processed.</p>
-                  <p className="text-sm text-muted-foreground">Estimated time depends on your device's performance.</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleProcessBatch} disabled={isProcessing || !hasQueuedFiles}>
-                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                    {isProcessing ? 'Processing...' : 'Start Batch'}
-                  </Button>
-                  <Button onClick={handleClearQueue} variant="destructive" disabled={isProcessing}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Clear
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2 max-h-96 overflow-y-auto p-2">
-                {queue.map(file => (
-                  <FileQueueItem key={file.id} {...file} />
-                ))}
-              </div>
-
-              <Button onClick={handleDownloadAll} disabled={isProcessing || doneCount === 0} size="lg" className="w-full">
-                <Download className="mr-2 h-4 w-4" /> Download All as ZIP ({doneCount})
+          {!session ? (
+            <div className="text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground">You need to be logged in to use the Batch Remover.</p>
+              <Button asChild>
+                <Link to="/login">Login or Sign Up</Link>
               </Button>
             </div>
+          ) : (
+            <>
+              <MultiImageUploader onFilesSelect={handleFilesSelect} disabled={isProcessing} />
+              
+              {!isQueueEmpty && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border rounded-lg bg-muted/50">
+                    <div className="text-center sm:text-left">
+                      <p className="font-semibold">{totalFiles} files in queue, {doneCount} processed.</p>
+                      <p className="text-sm text-muted-foreground">Each image counts as one free use against your daily limit.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleProcessBatch} disabled={isProcessing || !hasQueuedFiles}>
+                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                        {isProcessing ? 'Processing...' : 'Start Batch'}
+                      </Button>
+                      <Button onClick={handleClearQueue} variant="destructive" disabled={isProcessing}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Clear
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-96 overflow-y-auto p-2">
+                    {queue.map(file => (
+                      <FileQueueItem key={file.id} {...file} />
+                    ))}
+                  </div>
+
+                  <Button onClick={handleDownloadAll} disabled={isProcessing || doneCount === 0} size="lg" className="w-full">
+                    <Download className="mr-2 h-4 w-4" /> Download All as ZIP ({doneCount})
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

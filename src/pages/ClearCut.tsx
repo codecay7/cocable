@@ -76,23 +76,19 @@ const ClearCut = () => {
 
     const isPremium = quality === 'landscape';
 
-    if (isPremium) {
-      if (!session) {
-        showError("Please log in to use premium features.");
-        return;
-      }
-      if (credits === null || credits < 1) {
-        showError("You don't have enough credits for this feature.");
-        openModal();
-        return;
-      }
+    if (!session) {
+      showError("Please log in to process images.");
+      return;
     }
 
     setIsLoading(true);
     setError(null);
 
-    if (isPremium && session) {
-      try {
+    try {
+      if (isPremium) {
+        if (credits === null || credits < 1) {
+          throw new Error("Insufficient credits");
+        }
         const { error: functionError } = await supabase.functions.invoke('deduct-credit', {
           body: { feature: 'high_quality_removal' }
         });
@@ -105,21 +101,15 @@ const ClearCut = () => {
             </Button>
           ),
         });
-      } catch (e: any) {
-        if (e.message.includes('Daily premium feature limit reached')) {
-          showError("You've reached your daily limit of 3 premium features.");
-        } else if (e.message.includes('Insufficient credits')) {
-          showError("You don't have enough credits.");
-          openModal();
-        } else {
-          showError("Credit deduction failed. Please try again.");
-        }
-        setIsLoading(false);
-        return;
+      } else {
+        // Check free usage limit
+        const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
+          body: { feature: 'free_background_removal' }
+        });
+        if (functionError) throw functionError;
       }
-    }
 
-    try {
+      // Proceed with image processing
       const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
       const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs', modelType: quality });
       const imageElement = new Image();
@@ -144,9 +134,19 @@ const ClearCut = () => {
       ctx.globalCompositeOperation = 'destination-in';
       ctx.drawImage(maskCanvas, 0, 0);
       setProcessedImage(canvas.toDataURL('image/png'));
-    } catch (e) {
-      console.error("Background removal failed:", e);
-      setError("Sorry, we couldn't process this image. It might be an unsupported format or too complex for the AI.");
+
+    } catch (e: any) {
+      if (e.message.includes('Daily premium feature limit reached')) {
+        showError("You've reached your daily limit of 3 premium features.");
+      } else if (e.message.includes('Insufficient credits')) {
+        showError("You don't have enough credits for this premium feature.");
+        openModal();
+      } else if (e.message.includes('daily limit')) {
+        showError(e.message);
+      } else {
+        setError("Sorry, we couldn't process this image. It might be an unsupported format or too complex for the AI.");
+        console.error("Background removal failed:", e);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -313,9 +313,9 @@ const ClearCut = () => {
                       <span>{credits ?? '...'} credits remaining. This will use 1 credit.</span>
                     </div>
                   )}
-                  {!session && quality === 'landscape' && (
+                  {!session && (
                     <Button asChild variant="link">
-                      <Link to="/login">Log in to use premium features</Link>
+                      <Link to="/login">Log in to process images</Link>
                     </Button>
                   )}
                 </div>

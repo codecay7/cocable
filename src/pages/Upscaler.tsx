@@ -23,7 +23,7 @@ const Upscaler = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scaleFactor, setScaleFactor] = useState<number>(2);
-  const [faceCorrect, setFaceCorrect] = useState<boolean>(true);
+  const [faceCorrect, setFaceCorrect] = useState<boolean>(false);
   const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
   const { session, user } = useSession();
@@ -63,23 +63,19 @@ const Upscaler = () => {
 
     const isPremium = faceCorrect;
 
-    if (isPremium) {
-      if (!session) {
-        showError("Please log in to use premium features.");
-        return;
-      }
-      if (credits === null || credits < 1) {
-        showError("You don't have enough credits for this feature.");
-        openModal();
-        return;
-      }
+    if (!session) {
+      showError("Please log in to process images.");
+      return;
     }
 
     setIsLoading(true);
     setError(null);
 
-    if (isPremium && session) {
-      try {
+    try {
+      if (isPremium) {
+        if (credits === null || credits < 1) {
+          throw new Error("Insufficient credits");
+        }
         const { error: functionError } = await supabase.functions.invoke('deduct-credit', {
           body: { feature: 'face_correction' }
         });
@@ -92,24 +88,16 @@ const Upscaler = () => {
             </Button>
           ),
         });
-      } catch (e: any) {
-        if (e.message.includes('Daily premium feature limit reached')) {
-          showError("You've reached your daily limit of 3 premium features.");
-        } else if (e.message.includes('Insufficient credits')) {
-          showError("You don't have enough credits.");
-          openModal();
-        } else {
-          showError("Credit deduction failed. Please try again.");
-        }
-        setIsLoading(false);
-        return;
+      } else {
+        const { error: functionError } = await supabase.functions.invoke('check-free-usage', {
+          body: { feature: 'free_upscale' }
+        });
+        if (functionError) throw functionError;
       }
-    }
-    
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Simulate AI processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-    try {
       const imageElement = new Image();
       imageElement.src = URL.createObjectURL(originalImage);
       await imageElement.decode();
@@ -130,9 +118,18 @@ const Upscaler = () => {
       ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
       
       setUpscaledImage(canvas.toDataURL('image/png'));
-    } catch (e) {
-      console.error("Upscaling failed:", e);
-      setError("Sorry, we couldn't process this image.");
+    } catch (e: any) {
+      if (e.message.includes('Daily premium feature limit reached')) {
+        showError("You've reached your daily limit of 3 premium features.");
+      } else if (e.message.includes('Insufficient credits')) {
+        showError("You don't have enough credits for this premium feature.");
+        openModal();
+      } else if (e.message.includes('daily limit')) {
+        showError(e.message);
+      } else {
+        setError("Sorry, we couldn't process this image.");
+        console.error("Upscaling failed:", e);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -197,9 +194,9 @@ const Upscaler = () => {
                       <span>{credits ?? '...'} credits remaining. This will use 1 credit.</span>
                     </div>
                   )}
-                  {!session && faceCorrect && (
+                  {!session && (
                     <Button asChild variant="link">
-                      <Link to="/login">Log in to use premium features</Link>
+                      <Link to="/login">Log in to process images</Link>
                     </Button>
                   )}
                 </div>

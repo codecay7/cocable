@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
-import { ColorPicker } from '@/components/ColorPicker';
 import { Loader2, Share2 } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
@@ -10,12 +9,14 @@ import '@tensorflow/tfjs-backend-webgl';
 import { showError } from '@/utils/toast';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
+import { EditPanel } from '@/components/EditPanel';
+import { ReactCompareSliderImage } from 'react-compare-slider';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
-  const [displayImage, setDisplayImage] = useState<string | null>(null);
-  const [backgroundColor, setBackgroundColor] = useState<string>('transparent');
+  const [background, setBackground] = useState<string>('transparent');
+  const [isShadowEnabled, setIsShadowEnabled] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isShareSupported, setIsShareSupported] = useState(false);
@@ -23,59 +24,24 @@ const ClearCut = () => {
 
   useEffect(() => {
     if (navigator.share) setIsShareSupported(true);
-
     const ctx = gsap.context(() => {
       gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
     }, cardRef);
     return () => ctx.revert();
   }, []);
 
-  const applyBackgroundColor = useCallback(async (imageSrc: string, color: string) => {
-    if (color === 'transparent') {
-      return imageSrc;
-    }
-
-    const image = new Image();
-    image.src = imageSrc;
-    await image.decode();
-
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return imageSrc;
-
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(image, 0, 0);
-
-    return canvas.toDataURL('image/png');
-  }, []);
-
-  useEffect(() => {
-    if (!processedImage) return;
-
-    const updateDisplayImage = async () => {
-      const newDisplayImage = await applyBackgroundColor(processedImage, backgroundColor);
-      setDisplayImage(newDisplayImage);
-    };
-
-    updateDisplayImage();
-  }, [processedImage, backgroundColor, applyBackgroundColor]);
-
   const handleFileSelect = (file: File) => {
     setOriginalImage(file);
     setProcessedImage(null);
-    setDisplayImage(null);
     setError(null);
-    setBackgroundColor('transparent');
+    setBackground('transparent');
+    setIsShadowEnabled(false);
   };
 
   const handleRemoveBackground = async () => {
     if (!originalImage) return;
     setIsLoading(true);
     setError(null);
-
     try {
       const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
       const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs' });
@@ -109,10 +75,50 @@ const ClearCut = () => {
     }
   };
 
-  const handleDownload = () => {
-    if (!displayImage) return;
+  const generateFinalImage = useCallback(async (format: 'dataURL' | 'blob') => {
+    if (!processedImage) return null;
+    const image = new Image();
+    image.src = processedImage;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const PADDING = isShadowEnabled ? 30 : 0;
+    canvas.width = image.width + PADDING * 2;
+    canvas.height = image.height + PADDING * 2;
+
+    if (background !== 'transparent' && !background.includes('gradient')) {
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else if (background.includes('gradient')) {
+      // Canvas doesn't support CSS gradients directly for download.
+      // For now, we'll download with a transparent background if a gradient is selected.
+    }
+
+    if (isShadowEnabled) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 10;
+    }
+
+    ctx.drawImage(image, PADDING, PADDING);
+
+    if (format === 'blob') {
+      return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+    }
+    return canvas.toDataURL('image/png');
+  }, [processedImage, background, isShadowEnabled]);
+
+  const handleDownload = async () => {
+    const imageHref = await generateFinalImage('dataURL');
+    if (!imageHref) {
+      showError("Could not generate image for download.");
+      return;
+    }
     const link = document.createElement('a');
-    link.href = displayImage;
+    link.href = imageHref;
     link.download = 'clearcut-result.png';
     document.body.appendChild(link);
     link.click();
@@ -120,23 +126,21 @@ const ClearCut = () => {
   };
 
   const handleShare = async () => {
-    if (!displayImage) return;
+    const blob = await generateFinalImage('blob');
+    if (!blob) {
+      showError("Could not generate image for sharing.");
+      return;
+    }
     try {
-      const response = await fetch(displayImage);
-      const blob = await response.blob();
       const file = new File([blob], 'clearcut-result.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Image with Background Removed',
-          text: 'Check out this image I edited with ClearCut AI!',
-        });
+        await navigator.share({ files: [file], title: 'Image edited with ClearCut AI' });
       } else {
         showError("Your browser doesn't support sharing files.");
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        showError('Sharing failed. Please try downloading the image instead.');
+        showError('Sharing failed. Please try downloading instead.');
       }
     }
   };
@@ -144,10 +148,23 @@ const ClearCut = () => {
   const handleReset = () => {
     setOriginalImage(null);
     setProcessedImage(null);
-    setDisplayImage(null);
     setError(null);
-    setBackgroundColor('transparent');
+    setBackground('transparent');
+    setIsShadowEnabled(false);
   };
+
+  const modifiedImage = processedImage && (
+    <div className="w-full h-full" style={{ background }}>
+      <ReactCompareSliderImage
+        src={processedImage}
+        alt="Result"
+        style={{
+          filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
+          transition: 'filter 0.3s ease-in-out',
+        }}
+      />
+    </div>
+  );
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -156,7 +173,7 @@ const ClearCut = () => {
           <CardTitle className="text-2xl font-bold text-center">ClearCut AI Background Remover</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {!displayImage && (
+          {!processedImage && (
             <div className="space-y-4">
               <ImageUploader onFileSelect={handleFileSelect} />
               {originalImage && (
@@ -171,26 +188,31 @@ const ClearCut = () => {
             </div>
           )}
 
-          {displayImage && (
+          {processedImage && (
             <div className="space-y-6">
               <div className="space-y-4 text-center">
                 <h3 className="text-xl font-semibold">Your Image is Ready!</h3>
                 <ComparisonSlider
-                  original={URL.createObjectURL(originalImage!)}
-                  modified={displayImage}
+                  original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage!)} alt="Original Image" />}
+                  modified={modifiedImage}
                 />
               </div>
               
-              <ColorPicker onColorChange={setBackgroundColor} selectedColor={backgroundColor} />
+              <EditPanel 
+                onBgChange={setBackground}
+                selectedBg={background}
+                onShadowChange={setIsShadowEnabled}
+                isShadowEnabled={isShadowEnabled}
+              />
 
-              <div className="flex flex-wrap justify-center gap-4 pt-4 border-t">
-                <Button onClick={handleDownload} size="lg">Download Image</Button>
+              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 border-t">
+                <Button onClick={handleDownload} size="lg" className="flex-1">Download Image</Button>
                 {isShareSupported && (
-                  <Button onClick={handleShare} size="lg" variant="secondary">
+                  <Button onClick={handleShare} size="lg" variant="secondary" className="flex-1">
                     <Share2 className="mr-2 h-4 w-4" /> Share
                   </Button>
                 )}
-                <Button onClick={handleReset} variant="outline" size="lg">Process Another Image</Button>
+                <Button onClick={handleReset} variant="outline" size="lg" className="flex-1">Process Another</Button>
               </div>
             </div>
           )}

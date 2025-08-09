@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ImageUploader } from '@/components/ImageUploader';
 import { Loader2 } from 'lucide-react';
+import * as bodySegmentation from '@tensorflow-models/selfie_segmentation';
+import '@tensorflow/tfjs-core';
+import '@tensorflow/tfjs-backend-webgl';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -22,21 +25,52 @@ const ClearCut = () => {
     setIsLoading(true);
     setError(null);
 
-    // Simulate API call for background removal
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Load the model from TensorFlow.js
+      const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
+      const segmenter = await bodySegmentation.createSegmenter(model, {
+        runtime: 'tfjs',
+      });
 
-    // In a real app, you would upload the image and get back the result.
-    // For this simulation, we'll just show the original image as the "processed" one.
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setProcessedImage(reader.result as string);
-      setIsLoading(false);
-    };
-    reader.onerror = () => {
-      setError('Failed to process image.');
+      // Create an image element from the uploaded file
+      const imageElement = new Image();
+      imageElement.src = URL.createObjectURL(originalImage);
+      await imageElement.decode(); // Wait for the image to be fully loaded
+
+      // Segment the image to find the person
+      const segmentation = await segmenter.segmentPeople(imageElement);
+
+      // Create a canvas to draw the new image with a transparent background
+      const canvas = document.createElement('canvas');
+      canvas.width = imageElement.width;
+      canvas.height = imageElement.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get canvas context');
+
+      // Create a binary mask of the person vs. the background
+      const binaryMask = await bodySegmentation.toBinaryMask(segmentation, {r:0,g:0,b:0,a:255}, {r:0,g:0,b:0,a:0});
+      
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = imageElement.width;
+      tempCanvas.height = imageElement.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) throw new Error('Could not get temp canvas context');
+      tempCtx.putImageData(binaryMask, 0, 0);
+
+      // Use compositing to clip the original image with the mask
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.globalCompositeOperation = 'source-in';
+      ctx.drawImage(imageElement, 0, 0);
+
+      // Set the result
+      setProcessedImage(canvas.toDataURL('image/png'));
+
+    } catch (e) {
+      console.error("Background removal failed:", e);
+      setError("Sorry, we couldn't process this image. It might be an unsupported format or too complex for the AI.");
+    } finally {
       setIsLoading(false);
     }
-    reader.readAsDataURL(originalImage);
   };
 
   const handleDownload = () => {
@@ -80,7 +114,7 @@ const ClearCut = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    Processing with AI...
                   </>
                 ) : (
                   'Remove Background'

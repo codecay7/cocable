@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Scissors, ArrowUpRightSquare, Menu, Eraser, CopyPlus } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { useSession } from '@/hooks/useSession';
 import { UserNav } from './UserNav';
 import { Skeleton } from './ui/skeleton';
+import { gsap } from 'gsap';
 
 const tools = [
   {
@@ -43,6 +44,23 @@ const tools = [
 export const Header = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { session, loading } = useSession();
+
+  useEffect(() => {
+    if (isSheetOpen) {
+      // Animate links in
+      gsap.fromTo(".mobile-nav-link", {
+        opacity: 0,
+        x: -30,
+      }, {
+        opacity: 1,
+        x: 0,
+        duration: 0.4,
+        ease: "power3.out",
+        stagger: 0.08,
+        delay: 0.2 // Wait for sheet to slide in
+      });
+    }
+  }, [isSheetOpen]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/30 backdrop-blur-lg">
@@ -92,28 +110,25 @@ export const Header = () => {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <nav className="flex flex-col space-y-4 mt-8">
+              <SheetContent side="right" className="w-[300px] sm:w-[350px] bg-background/90 backdrop-blur-lg">
+                <nav className="flex flex-col space-y-2 mt-8">
                   {tools.map((tool) => (
                     <NavLink
                       key={tool.path}
                       to={tool.path}
                       onClick={() => setIsSheetOpen(false)}
                       className={({ isActive }) => cn(
-                        "flex items-start space-x-3 p-3 rounded-md transition-colors",
+                        "mobile-nav-link flex items-center space-x-4 p-3 rounded-md text-base font-medium transition-colors",
                         isActive && tool.path === window.location.pathname ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
                       )}
                     >
-                      <div className="mt-1">{tool.icon}</div>
-                      <div>
-                        <p className="font-semibold">{tool.name}</p>
-                        <p className="text-sm text-muted-foreground">{tool.description}</p>
-                      </div>
+                      {tool.icon}
+                      <span>{tool.name}</span>
                     </NavLink>
                   ))}
                    {!session && (
-                    <Button asChild className="w-full mt-4">
-                      <Link to="/login" onClick={() => setIsSheetOpen(false)}>Login</Link>
+                    <Button asChild className="w-full mt-6 mobile-nav-link">
+                      <Link to="/login" onClick={() => setIsSheetOpen(false)}>Login or Sign Up</Link>
                     </Button>
                   )}
                 </nav>

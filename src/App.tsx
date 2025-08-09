@@ -11,6 +11,8 @@ import Upscaler from "./pages/Upscaler";
 import BatchRemover from "./pages/BatchRemover";
 import ObjectRemover from "./pages/ObjectRemover";
 import { Layout } from "./components/Layout";
+import Login from "./pages/Login";
+import { SessionProvider } from "./contexts/SessionContext";
 
 const queryClient = new QueryClient();
 
@@ -20,17 +22,20 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/clearcut" element={<ClearCut />} />
-            <Route path="/upscaler" element={<Upscaler />} />
-            <Route path="/batch-remover" element={<BatchRemover />} />
-            <Route path="/object-remover" element={<ObjectRemover />} />
-          </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <SessionProvider>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/clearcut" element={<ClearCut />} />
+              <Route path="/upscaler" element={<Upscaler />} />
+              <Route path="/batch-remover" element={<BatchRemover />} />
+              <Route path="/object-remover" element={<ObjectRemover />} />
+            </Route>
+            <Route path="/login" element={<Login />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </SessionProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

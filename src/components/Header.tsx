@@ -9,6 +9,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from './ui/button';
+import { useSession } from '@/hooks/useSession';
+import { UserNav } from './UserNav';
+import { Skeleton } from './ui/skeleton';
 
 const tools = [
   {
@@ -39,6 +42,7 @@ const tools = [
 
 export const Header = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { session, loading } = useSession();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/30 backdrop-blur-lg">
@@ -69,6 +73,16 @@ export const Header = () => {
         <div className="ml-auto flex items-center space-x-2">
           <ThemeToggle />
 
+          {loading ? (
+            <Skeleton className="h-8 w-8 rounded-full" />
+          ) : session ? (
+            <UserNav />
+          ) : (
+            <Button asChild className="hidden md:flex">
+              <Link to="/login">Login</Link>
+            </Button>
+          )}
+
           {/* Mobile Navigation */}
           <div className="md:hidden">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -97,6 +111,11 @@ export const Header = () => {
                       </div>
                     </NavLink>
                   ))}
+                   {!session && (
+                    <Button asChild className="w-full mt-4">
+                      <Link to="/login" onClick={() => setIsSheetOpen(false)}>Login</Link>
+                    </Button>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>

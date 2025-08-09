@@ -226,13 +226,13 @@ const ClearCut = () => {
 
     const finalImage = (
       <div 
-        className="w-full h-full flex items-center justify-center rounded-md overflow-hidden border"
+        className="w-full min-h-[40vh] flex items-center justify-center rounded-md overflow-hidden border"
         style={{ background }}
       >
         <img
           src={processedImage}
           alt="Result"
-          className="max-w-full max-h-full object-contain max-h-[60vh]"
+          className="max-w-full max-h-[40vh] object-contain"
           style={{
             filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
             transition: 'filter 0.3s ease-in-out',
@@ -275,7 +275,9 @@ const ClearCut = () => {
               <ImageUploader onFileSelect={handleFileSelect} />
               {originalImage && (
                 <div className="text-center p-4 border rounded-lg space-y-4">
-                  <img src={URL.createObjectURL(originalImage)} alt="Preview" className="max-h-[40vh] mx-auto rounded-md object-contain" />
+                  <div className="w-full min-h-[40vh] flex items-center justify-center">
+                    <img src={URL.createObjectURL(originalImage)} alt="Preview" className="max-h-[40vh] max-w-full mx-auto rounded-md object-contain" />
+                  </div>
                   <p className="text-sm text-muted-foreground mt-2">{originalImage.name}</p>
                   <div className="flex items-center justify-center space-x-2">
                     <Label htmlFor="quality-switch">Standard</Label>

@@ -17,28 +17,28 @@ const tools = [
     name: "AI Background Remover",
     path: "/clearcut",
     description: "Instantly remove the background from any image with one click.",
-    icon: <Scissors className="h-8 w-8 mb-4 text-primary" />,
+    icon: <Scissors className="h-8 w-8" />,
     status: 'live',
   },
   {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution by 2x or 4x without losing quality.",
-    icon: <ArrowUpRightSquare className="h-8 w-8 mb-4 text-primary" />,
+    icon: <ArrowUpRightSquare className="h-8 w-8" />,
     status: 'live',
   },
   {
     name: "AI Object Remover",
     path: "/object-remover",
     description: "Erase unwanted objects, people, or text from your photos.",
-    icon: <Eraser className="h-8 w-8 mb-4 text-primary" />,
+    icon: <Eraser className="h-8 w-8" />,
     status: 'live',
   },
   {
     name: "Batch Background Removal",
     path: "/batch-remover",
     description: "Process dozens of images at once to save time.",
-    icon: <CopyPlus className="h-8 w-8 mb-4 text-primary" />,
+    icon: <CopyPlus className="h-8 w-8" />,
     status: 'live',
   }
 ];
@@ -49,11 +49,13 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
   const cardContent = (
     <Card className={cn(
       "text-center h-full flex flex-col transition-all duration-300 group",
-      isLive ? "hover:border-primary hover:shadow-lg hover:-translate-y-2 cursor-pointer" : "bg-muted/50 opacity-70"
+      isLive ? "hover:border-primary hover:shadow-lg hover:-translate-y-2 cursor-pointer bg-card/60" : "bg-muted/50 opacity-70"
     )}>
-      <CardHeader>
-        {tool.icon}
-        <CardTitle>{tool.name}</CardTitle>
+      <CardHeader className="items-center">
+        <div className="bg-primary/10 text-primary w-16 h-16 flex items-center justify-center rounded-full mb-4 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground">
+          {tool.icon}
+        </div>
+        <CardTitle className="text-xl">{tool.name}</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-between">
         <CardDescription>{tool.description}</CardDescription>

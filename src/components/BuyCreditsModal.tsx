@@ -48,7 +48,9 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
     let order;
     const orderToastId = showLoading('Initializing secure payment...');
     try {
-      const { data, error } = await supabase.functions.invoke('create-razorpay-order');
+      const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
+        body: { amount: 50000 } // Send amount in paise (500 INR)
+      });
       if (error) throw error;
       order = data;
       dismissToast(orderToastId);

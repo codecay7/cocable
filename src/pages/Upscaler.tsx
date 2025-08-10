@@ -100,7 +100,7 @@ const Upscaler = () => {
       // 2. Check for cached result
       toast.info("Checking for a cached version...", { id: loadingToastId });
       const { data: cachedData, error: cacheError } = await supabase.storage
-        .from('upscaler_cache')
+        .from('upscaler-cache')
         .download(cachePath);
 
       if (cacheError && cacheError.message !== 'The resource was not found') {
@@ -153,7 +153,7 @@ const Upscaler = () => {
       toast.info("Saving result to cache for next time...", { id: loadingToastId });
       const blobToCache = await base64ToBlob(upscaledBase64);
       const { error: uploadError } = await supabase.storage
-        .from('upscaler_cache')
+        .from('upscaler-cache')
         .upload(cachePath, blobToCache, {
           cacheControl: '3600', // Cache for 1 hour
           upsert: true,

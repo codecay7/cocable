@@ -156,7 +156,9 @@ const Upscaler = () => {
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">AI Image Upscaler</CardTitle>
-          <CardDescription>Increase image resolution by 2x or 4x. Face Correction enhances facial details.</CardDescription>
+          <CardDescription>
+            Includes 3 free daily uses, then 1 credit per image. Face Correction enhances facial details.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!upscaledImage && (

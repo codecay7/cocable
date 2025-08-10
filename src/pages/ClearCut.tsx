@@ -281,7 +281,9 @@ const ClearCut = () => {
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">ClearCut AI Background Remover</CardTitle>
-          <CardDescription className="text-center">Remove the background from any image. High Quality provides better results for complex scenes.</CardDescription>
+          <CardDescription className="text-center">
+            Includes 3 free daily uses, then 1 credit per image. High Quality provides better results for complex scenes.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {!processedImage && (

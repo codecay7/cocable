@@ -46,14 +46,22 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const authHeader = req.headers.get('Authorization')!
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Unauthorized: Missing token');
+    }
+    
     const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''))
 
     if (!user) {
-      throw new Error('Unauthorized');
+      throw new Error('Unauthorized: Invalid token');
     }
 
     const { order_id, payment_id, signature } = await req.json();
+    if (!order_id || !payment_id || !signature) {
+      throw new Error('Missing payment details in request.');
+    }
+
     const body = `${order_id}|${payment_id}`;
 
     const isVerified = await verifySignature(body, signature, RAZORPAY_KEY_SECRET);
@@ -62,7 +70,7 @@ serve(async (req) => {
       throw new Error('Payment verification failed. Signature mismatch.');
     }
 
-    const credits_to_add = 50; // Hardcoded for the 50 credit pack
+    const credits_to_add = 50;
 
     const { error: rpcError } = await supabaseAdmin.rpc('add_credits', {
       user_id_param: user.id,

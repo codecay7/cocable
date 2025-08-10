@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { btoa } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Check for Razorpay secrets
     const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID');
     const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
 
@@ -25,7 +23,6 @@ serve(async (req) => {
       });
     }
 
-    // 2. Authenticate the user
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -39,19 +36,17 @@ serve(async (req) => {
         });
     }
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''));
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''));
 
-    if (userError || !userData.user) {
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: userError?.message || 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
-    const user = userData.user;
 
-    // 3. Prepare order data
     const orderData = {
-      amount: 50000, // 500.00 INR in paise
+      amount: 50000,
       currency: "INR",
       receipt: `receipt_user_${user.id}_${Date.now()}`,
       notes: {
@@ -60,7 +55,6 @@ serve(async (req) => {
       }
     };
 
-    // 4. Create Razorpay order
     const basicAuth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
     const response = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
@@ -78,7 +72,6 @@ serve(async (req) => {
       throw new Error(responseBody.error?.description || 'Failed to create Razorpay order.');
     }
 
-    // 5. Return the successful order
     return new Response(JSON.stringify(responseBody), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

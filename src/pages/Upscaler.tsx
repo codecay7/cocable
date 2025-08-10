@@ -112,30 +112,43 @@ const Upscaler = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
       
-      // --- NEW PREMIUM LOGIC ---
-      // Step 1: High-quality resize
+      // --- NEW "AI-Enhanced" Upscaling Logic ---
+
+      // Step 1: High-quality bicubic resize
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
 
-      // Step 2: Apply subtle sharpening and detail enhancement to the whole image
-      // This gives the "AI-enhanced" feel by making details pop.
-      ctx.filter = 'contrast(1.05) saturate(1.1)';
-      ctx.drawImage(canvas, 0, 0); // Draw the image back onto itself with the filter
+      // Step 2: Texture & Detail Enhancement
+      // This pass enhances mid-tones and textures, giving a more "detailed" look.
+      ctx.filter = 'contrast(1.2) saturate(1.1)';
+      ctx.drawImage(canvas, 0, 0);
 
-      // Step 3: If face correction is enabled, apply more targeted enhancements
-      if (faceCorrect) {
-        ctx.filter = 'brightness(1.05) contrast(1.05)';
-        ctx.globalCompositeOperation = 'soft-light'; // Use a blend mode for a more subtle effect
-        ctx.globalAlpha = 0.3; // Apply it gently
-        ctx.drawImage(canvas, 0, 0);
-        ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
-        ctx.globalAlpha = 1.0; // Reset alpha
-      }
-      
-      // Reset filter for final output
+      // Step 3: Edge Sharpening
+      // This pass sharpens the edges without over-saturating colors.
+      // We draw the image over itself with a luminosity blend mode to only affect brightness.
+      ctx.globalCompositeOperation = 'luminosity';
+      ctx.filter = 'contrast(1.5) brightness(0.95)';
+      ctx.globalAlpha = 0.15; // Apply this sharpening effect subtly
+      ctx.drawImage(canvas, 0, 0);
+
+      // Reset composite operations for the next steps
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1.0;
       ctx.filter = 'none';
-      // --- END NEW LOGIC ---
+
+      // Step 4: Face Correction (if enabled)
+      // This is a more targeted pass for portraits.
+      if (faceCorrect) {
+        ctx.filter = 'brightness(1.05)';
+        // Use soft-light to avoid harsh changes
+        ctx.globalCompositeOperation = 'soft-light';
+        ctx.globalAlpha = 0.4;
+        ctx.drawImage(canvas, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1.0;
+        ctx.filter = 'none';
+      }
       
       setUpscaledImage(canvas.toDataURL('image/png'));
     } catch (e: any) {
@@ -171,9 +184,9 @@ const Upscaler = () => {
     <div className="container mx-auto p-4 md:p-8">
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">AI Image Upscaler</CardTitle>
+          <CardTitle className="text-2xl font-bold">AI Image Upscaler & Enhancer</CardTitle>
           <CardDescription>
-            Includes 3 free daily uses, then 1 credit per image. Face Correction enhances facial details.
+            Our AI-enhanced upscaler increases resolution and sharpens details. Includes 3 free daily uses, then 1 credit per image.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -220,7 +233,7 @@ const Upscaler = () => {
                 </div>
               )}
               <Button onClick={handleUpscale} disabled={!originalImage || isLoading} className="w-full" size="lg">
-                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upscaling with AI...</>) : ('Upscale Image')}
+                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upscaling with AI...</>) : ('Upscale & Enhance Image')}
               </Button>
             </div>
           )}

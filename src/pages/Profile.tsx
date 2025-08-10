@@ -52,14 +52,19 @@ const Profile = () => {
 
   const isRazorpayConfigured = !!import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-  const { data: profile, isLoading: isProfileLoading } = useQuery<ProfileData>({
+  const { data: profile, isLoading: isProfileLoading } = useQuery<ProfileData, Error>({
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user!.id),
     enabled: !!user,
-    onSuccess: (data) => setFormData(data),
   });
 
-  const { data: credits, isLoading: isCreditsLoading } = useQuery<number>({
+  useEffect(() => {
+    if (profile) {
+      setFormData(profile);
+    }
+  }, [profile]);
+
+  const { data: credits, isLoading: isCreditsLoading } = useQuery<number, Error>({
     queryKey: ['credits', user?.id],
     queryFn: () => fetchCredits(user!.id),
     enabled: !!user,

@@ -30,8 +30,9 @@ async function verifySignature(body: string, signature: string, secret: string):
 }
 
 serve(async (req) => {
+  // Explicitly handle preflight requests with a 200 OK response
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {

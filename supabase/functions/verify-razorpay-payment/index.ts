@@ -6,32 +6,12 @@ import { encodeToString } from "https://deno.land/std@0.224.0/encoding/hex.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
-  const generatedSignature = encodeToString(new Uint8Array(mac));
-
-  try {
-    return timingSafeEqual(
-      new TextEncoder().encode(generatedSignature),
-      new TextEncoder().encode(signature),
-    );
-  } catch {
-    return false;
-  }
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders, status: 204 })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
@@ -93,3 +73,24 @@ serve(async (req) => {
     })
   }
 })
+
+async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  const generatedSignature = encodeToString(new Uint8Array(mac));
+
+  try {
+    return timingSafeEqual(
+      new TextEncoder().encode(generatedSignature),
+      new TextEncoder().encode(signature),
+    );
+  } catch {
+    return false;
+  }
+}

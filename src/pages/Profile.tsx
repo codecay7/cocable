@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageUploader } from '@/components/ImageUploader';
 import { showError, showSuccess } from '@/utils/toast';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Loader2, CreditCard, Bug } from 'lucide-react';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RedeemCoupon } from '@/components/RedeemCoupon';
@@ -40,7 +40,6 @@ const fetchCredits = async (userId: string): Promise<number> => {
     .single();
   
   if (error && error.code === 'PGRST116') {
-    // This handles the case where a user might not have a credits entry yet.
     return 0;
   }
   if (error) throw new Error(error.message);
@@ -119,6 +118,46 @@ const Profile = () => {
       await queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
     }
     setIsUpdating(false);
+  };
+
+  const handleRawFetchTest = async () => {
+    console.log("🚀 Starting raw fetch test...");
+    if (!session?.access_token) {
+      const message = "No access token found. Cannot perform test.";
+      console.error(message);
+      alert(message);
+      return;
+    }
+
+    const functionUrl = 'https://wmovopaqffanwophpouh.supabase.co/functions/v1/create-razorpay-order';
+    const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indtb3ZvcGFxZmZhbndvcGhwb3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3Njg1MzcsImV4cCI6MjA3MDM0NDUzN30.6EgVDmfWHW_Hcx2G_CQ_WzbL2lFeZ8dudO2mob2pltE";
+
+    try {
+      console.log(`Browser will now send OPTIONS preflight to: ${functionUrl}`);
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': supabaseAnonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ test: "raw fetch" })
+      });
+
+      console.log("✅ Raw fetch response received:", response);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("❌ Raw fetch failed with status:", response.status, data);
+        alert(`Raw fetch failed! Status: ${response.status}. Check browser console.`);
+      } else {
+        console.log("✅ Raw fetch successful! Data:", data);
+        alert(`Raw fetch successful! Data: ${JSON.stringify(data)}`);
+      }
+    } catch (error) {
+      console.error("❌ Raw fetch threw a network error:", error);
+      alert("A network error occurred. Check browser console.");
+    }
   };
 
   if (sessionLoading) {
@@ -202,6 +241,19 @@ const Profile = () => {
             </div>
           </CardContent>
           <RedeemCoupon />
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Bug className="w-5 h-5" /> Debug Tools</CardTitle>
+            <CardDescription>Use these tools to help diagnose issues with the application.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleRawFetchTest}>Run Raw Fetch Test</Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              This button bypasses the app's logic and sends a direct `fetch` request to the edge function. Check the browser console for output.
+            </p>
+          </CardContent>
         </Card>
       </div>
     </div>

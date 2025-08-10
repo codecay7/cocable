@@ -22,7 +22,7 @@ interface ProfileData {
   avatar_url: string;
 }
 
-const fetchProfile = async (userId: string) => {
+const fetchProfile = async (userId: string): Promise<ProfileData> => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -32,12 +32,17 @@ const fetchProfile = async (userId: string) => {
   return data;
 };
 
-const fetchCredits = async (userId: string) => {
+const fetchCredits = async (userId: string): Promise<number> => {
   const { data, error } = await supabase
     .from('user_credits')
     .select('credits')
     .eq('user_id', userId)
     .single();
+  
+  if (error && error.code === 'PGRST116') {
+    // This handles the case where a user might not have a credits entry yet.
+    return 0;
+  }
   if (error) throw new Error(error.message);
   return data.credits;
 };
@@ -52,7 +57,7 @@ const Profile = () => {
 
   const isRazorpayConfigured = !!import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-  const { data: profile, isLoading: isProfileLoading } = useQuery<ProfileData, Error>({
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user!.id),
     enabled: !!user,
@@ -64,7 +69,7 @@ const Profile = () => {
     }
   }, [profile]);
 
-  const { data: credits, isLoading: isCreditsLoading } = useQuery<number, Error>({
+  const { data: credits, isLoading: isCreditsLoading } = useQuery({
     queryKey: ['credits', user?.id],
     queryFn: () => fetchCredits(user!.id),
     enabled: !!user,
@@ -91,14 +96,9 @@ const Profile = () => {
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
       newAvatarUrl = urlData.publicUrl;
 
-      // Update the user's metadata in Supabase Auth
-      const { error: userUpdateError } = await supabase.auth.updateUser({
+      await supabase.auth.updateUser({
         data: { avatar_url: newAvatarUrl }
       });
-
-      if (userUpdateError) {
-        showError('Failed to update avatar in user profile.');
-      }
     }
 
     const { error } = await supabase
@@ -146,7 +146,7 @@ const Profile = () => {
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div className="flex items-center gap-6">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : user?.user_metadata.avatar_url} />
+                    <AvatarImage src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url} />
                     <AvatarFallback>{formData?.first_name?.[0] || user?.email?.[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-grow">

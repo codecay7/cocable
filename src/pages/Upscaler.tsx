@@ -16,15 +16,7 @@ import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
-
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-};
+import { generateFileHash, base64ToBlob, fileToBase64 } from '@/utils/image';
 
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -83,9 +75,29 @@ const Upscaler = () => {
 
     setIsLoading(true);
     setError(null);
+    const loadingToastId = toast.loading("Preparing your image...");
 
     try {
-      // First, check usage and deduct credits
+      // 1. Generate hash for caching
+      toast.info("Generating unique image signature...", { id: loadingToastId });
+      const hash = await generateFileHash(originalImage);
+      const cachePath = `${hash}_${scaleFactor}x.png`;
+
+      // 2. Check for cached result in a public bucket
+      toast.info("Checking for a cached version...", { id: loadingToastId });
+      const { data: cachedData, error: cacheError } = await supabase.storage
+        .from('upscaler_cache')
+        .download(cachePath);
+
+      if (cachedData) {
+        toast.success("Found a cached result! ✨", { id: loadingToastId });
+        setUpscaledImage(URL.createObjectURL(cachedData));
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. If not cached, proceed with processing
+      toast.info("No cache found. Checking usage credits...", { id: loadingToastId });
       const { data: usageData, error: functionError } = await supabase.functions.invoke('process-feature-use', {
         body: { feature: `realesrgan_upscaler_${scaleFactor}x` }
       });
@@ -101,13 +113,14 @@ const Upscaler = () => {
       }
 
       if (usageData.status === 'paid_use_logged') {
-        toast.success("1 credit used.");
+        toast.success("1 credit used.", { id: loadingToastId });
         setCredits(c => (c !== null ? c - 1 : null));
       } else if (usageData.status === 'free_use_logged') {
-        toast.info(`Free use! You have ${usageData.remaining_free} free uses left today.`);
+        toast.info(`Free use! You have ${usageData.remaining_free} free uses left today.`, { id: loadingToastId });
       }
       
-      // If usage check is successful, proceed with upscaling
+      // 4. Call the upscaler function
+      toast.info("Sending to the AI upscaler... This may take a moment.", { id: loadingToastId });
       const imageBase64 = await fileToBase64(originalImage);
       const { data: upscaleData, error: upscaleError } = await supabase.functions.invoke('realesrgan-upscaler', {
         body: { imageBase64, scaleFactor }
@@ -115,9 +128,27 @@ const Upscaler = () => {
 
       if (upscaleError) throw upscaleError;
 
-      setUpscaledImage(upscaleData.upscaledImage);
+      const upscaledBase64 = upscaleData.upscaledImage;
+      setUpscaledImage(upscaledBase64);
+
+      // 5. Upload the new result to the cache
+      toast.info("Saving result to cache for next time...", { id: loadingToastId });
+      const blobToCache = await base64ToBlob(upscaledBase64);
+      const { error: uploadError } = await supabase.storage
+        .from('upscaler_cache')
+        .upload(cachePath, blobToCache, {
+          cacheControl: '3600', // Cache for 1 hour
+          upsert: true,
+        });
+      
+      if (uploadError) {
+        console.warn("Failed to cache the result:", uploadError.message);
+      }
+
+      toast.success("Upscaling complete!", { id: loadingToastId });
 
     } catch (e: any) {
+      toast.dismiss(loadingToastId);
       if (e.message !== "Usage check failed") {
         setError("Sorry, we couldn't process this image. The external service may be busy or the image format is not supported. Please try again in a moment.");
         console.error("Upscaling failed:", e);

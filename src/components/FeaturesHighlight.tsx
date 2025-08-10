@@ -4,6 +4,8 @@ import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ComparisonSlider } from './ComparisonSlider';
+import { ReactCompareSliderImage } from 'react-compare-slider';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -37,8 +39,19 @@ export const FeaturesHighlight = () => {
             </Link>
           </Button>
         </div>
-        <div className="feature-image rounded-lg overflow-hidden shadow-2xl bg-muted/30">
-          <img src="/placeholder.svg" alt="Background removal example" className="w-full h-full object-cover" />
+        <div className="feature-image">
+          <ComparisonSlider
+            original={<ReactCompareSliderImage src="/placeholder.svg" alt="Original Image" />}
+            modified={
+              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 flex items-center justify-center">
+                <ReactCompareSliderImage
+                  src="/placeholder.svg"
+                  alt="Image with background removed"
+                  style={{ mixBlendMode: 'darken' }}
+                />
+              </div>
+            }
+          />
         </div>
       </div>
     </section>

@@ -230,8 +230,8 @@ const Upscaler = () => {
               <div className="space-y-4 text-center">
                 <h3 className="text-xl font-semibold">Upscaling Complete!</h3>
                 <ComparisonSlider
-                  original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage)} alt="Original Image" />}
-                  modified={<ReactCompareSliderImage src={upscaledImage} alt="Upscaled Image" />}
+                  original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage)} alt="Original Image" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
+                  modified={<ReactCompareSliderImage src={upscaledImage} alt="Upscaled Image" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
                 />
               </div>
               

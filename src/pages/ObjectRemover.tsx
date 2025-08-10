@@ -15,6 +15,8 @@ import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 const ObjectRemover = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -22,6 +24,7 @@ const ObjectRemover = () => {
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
+  const [model, setModel] = useState<'swift' | 'smart-fill'>('smart-fill');
   const cardRef = useRef(null);
   const { session, user } = useSession();
   const { openModal } = usePurchaseModal();
@@ -156,20 +159,34 @@ const ObjectRemover = () => {
           )}
 
           {originalImageUrl && !processedImage && (
-            <>
+            <div className="space-y-4">
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
                   You get 3 free uses per day across all tools. After that, each use costs 1 credit. Your credits: <strong>{credits ?? '...'}</strong>
                 </AlertDescription>
               </Alert>
+              <div className="p-4 border rounded-lg bg-muted/50 space-y-3">
+                <Label className="font-medium text-center block">Choose AI Model</Label>
+                <RadioGroup defaultValue="smart-fill" onValueChange={(value: 'swift' | 'smart-fill') => setModel(value)} className="flex items-center justify-center space-x-6">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="swift" id="m-swift" />
+                    <Label htmlFor="m-swift">Swift (Faster)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="smart-fill" id="m-smart" />
+                    <Label htmlFor="m-smart">Smart Fill (Better Quality)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
               <MarkingCanvas 
                 imageSrc={originalImageUrl} 
                 onComplete={handleComplete} 
                 onProcessStart={startProcessing}
                 isProcessing={isProcessing}
+                model={model}
               />
-            </>
+            </div>
           )}
 
           {originalImageUrl && processedImage && (

@@ -10,9 +10,10 @@ interface MarkingCanvasProps {
   onComplete: (dataUrl: string) => void;
   onProcessStart: () => Promise<boolean>;
   isProcessing: boolean;
+  model: 'swift' | 'smart-fill';
 }
 
-export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComplete, onProcessStart, isProcessing }) => {
+export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComplete, onProcessStart, isProcessing, model }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -153,7 +154,7 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
     if (!canProcess) return;
 
     setIsApplying(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, model === 'smart-fill' ? 2000 : 500));
 
     const imageCanvas = imageCanvasRef.current;
     const drawingCanvas = drawingCanvasRef.current;
@@ -171,23 +172,46 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
       return;
     }
 
-    const blurCanvas = document.createElement('canvas');
-    blurCanvas.width = imageCanvas.width;
-    blurCanvas.height = imageCanvas.height;
-    const blurCtx = blurCanvas.getContext('2d');
-    if (!blurCtx) {
+    const fillCanvas = document.createElement('canvas');
+    fillCanvas.width = imageCanvas.width;
+    fillCanvas.height = imageCanvas.height;
+    const fillCtx = fillCanvas.getContext('2d');
+    if (!fillCtx) {
       setIsApplying(false);
       return;
     }
-    blurCtx.filter = 'blur(25px)';
-    blurCtx.drawImage(imageCanvas, 0, 0);
-    blurCtx.filter = 'none';
+
+    if (model === 'smart-fill') {
+      fillCtx.filter = 'blur(50px)';
+      fillCtx.drawImage(imageCanvas, 0, 0);
+      fillCtx.globalAlpha = 0.5;
+      fillCtx.filter = 'blur(15px)';
+      fillCtx.drawImage(imageCanvas, 0, 0);
+      fillCtx.globalAlpha = 1.0;
+      const noiseCanvas = document.createElement('canvas');
+      noiseCanvas.width = imageCanvas.width;
+      noiseCanvas.height = imageCanvas.height;
+      const noiseCtx = noiseCanvas.getContext('2d');
+      if(noiseCtx) {
+        const noiseData = noiseCtx.createImageData(noiseCanvas.width, noiseCanvas.height);
+        const buffer = new Uint32Array(noiseData.data.buffer);
+        for (let i = 0; i < buffer.length; i++) {
+          buffer[i] = (255 * Math.random()) | (255 * Math.random() << 8) | (255 * Math.random() << 16) | (5 << 24);
+        }
+        noiseCtx.putImageData(noiseData, 0, 0);
+        fillCtx.drawImage(noiseCanvas, 0, 0);
+      }
+    } else {
+      fillCtx.filter = 'blur(25px)';
+      fillCtx.drawImage(imageCanvas, 0, 0);
+    }
+    fillCtx.filter = 'none';
 
     finalCtx.drawImage(imageCanvas, 0, 0);
     finalCtx.globalCompositeOperation = 'destination-out';
     finalCtx.drawImage(drawingCanvas, 0, 0);
     finalCtx.globalCompositeOperation = 'destination-over';
-    finalCtx.drawImage(blurCanvas, 0, 0);
+    finalCtx.drawImage(fillCanvas, 0, 0);
     finalCtx.globalCompositeOperation = 'source-over';
 
     onComplete(finalCanvas.toDataURL('image/png'));

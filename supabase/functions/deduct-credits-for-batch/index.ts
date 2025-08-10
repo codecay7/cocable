@@ -8,7 +8,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders, status: 204 })
   }
 
   try {
@@ -49,7 +49,7 @@ serve(async (req) => {
 
     const { error: rpcError } = await supabaseAdmin.rpc('deduct_credits', { 
         user_id_param: user.id,
-        credits_to_deduct: creditsToDeduct
+        credits_to_dect: creditsToDeduct
     });
 
     if (rpcError) {

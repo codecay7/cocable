@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ExampleImages } from '@/components/ExampleImages';
 
 const ObjectRemover = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -49,11 +50,24 @@ const ObjectRemover = () => {
     setProcessedImage(null);
   };
 
+  const handleExampleSelect = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const fileName = url.split('/').pop() || 'example.svg';
+      const file = new File([blob], fileName, { type: blob.type });
+      handleFileSelect(file);
+    } catch (error) {
+      showError("Could not load the example image.");
+      console.error("Failed to fetch example image:", error);
+    }
+  };
+
   const startProcessing = async () => {
-    if (!originalImage) return;
+    if (!originalImage) return false;
     if (!session) {
       showError("Please log in to process images.");
-      return;
+      return false;
     }
 
     setIsProcessing(true);
@@ -79,8 +93,6 @@ const ObjectRemover = () => {
         toast.info(`Free use! You have ${data.remaining_free} free uses left today.`);
       }
 
-      // This is a mock processing call. The actual "processing" happens in MarkingCanvas
-      // We pass a function to MarkingCanvas to call when it's done.
       return true;
 
     } catch (e: any) {
@@ -134,7 +146,12 @@ const ObjectRemover = () => {
             </div>
           )}
 
-          {session && !originalImage && <ImageUploader onFileSelect={handleFileSelect} />}
+          {session && !originalImage && (
+            <>
+              <ImageUploader onFileSelect={handleFileSelect} />
+              <ExampleImages onSelect={handleExampleSelect} />
+            </>
+          )}
 
           {originalImageUrl && !processedImage && (
             <>

@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ExampleImages } from '@/components/ExampleImages';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -65,6 +66,19 @@ const ClearCut = () => {
     setIsShadowEnabled(false);
     setIsRefining(false);
     setShowCompare(false);
+  };
+
+  const handleExampleSelect = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const fileName = url.split('/').pop() || 'example.svg';
+      const file = new File([blob], fileName, { type: blob.type });
+      handleFileSelect(file);
+    } catch (error) {
+      showError("Could not load the example image.");
+      console.error("Failed to fetch example image:", error);
+    }
   };
 
   const handleRemoveBackground = async () => {
@@ -273,6 +287,7 @@ const ClearCut = () => {
           {!processedImage && (
             <div className="space-y-4">
               <ImageUploader onFileSelect={handleFileSelect} />
+              <ExampleImages onSelect={handleExampleSelect} />
               {originalImage && (
                 <div className="text-center p-4 border rounded-lg space-y-4">
                   <div className="w-full min-h-[40vh] flex items-center justify-center">

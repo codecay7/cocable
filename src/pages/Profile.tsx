@@ -13,6 +13,7 @@ import { Loader2, CreditCard } from 'lucide-react';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RedeemCoupon } from '@/components/RedeemCoupon';
+import { Badge } from '@/components/ui/badge';
 
 interface ProfileData {
   id: string;
@@ -48,6 +49,8 @@ const Profile = () => {
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<Partial<ProfileData>>({});
   const { openModal } = usePurchaseModal();
+
+  const isRazorpayConfigured = !!import.meta.env.VITE_RAZORPAY_KEY_ID;
 
   const { data: profile, isLoading: isProfileLoading } = useQuery<ProfileData>({
     queryKey: ['profile', user?.id],
@@ -90,8 +93,6 @@ const Profile = () => {
 
       if (userUpdateError) {
         showError('Failed to update avatar in user profile.');
-        // Note: The file is already uploaded, but the profile won't reflect it.
-        // A more robust solution might delete the uploaded file here.
       }
     }
 
@@ -180,7 +181,20 @@ const Profile = () => {
           <CardContent>
             <div className="text-4xl font-bold">{isCreditsLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : credits}</div>
             <p className="text-muted-foreground">credits remaining</p>
-            <Button className="mt-4" onClick={openModal}>Buy More Credits</Button>
+            <Button className="mt-4" onClick={openModal} disabled={!isRazorpayConfigured}>
+              Buy More Credits
+            </Button>
+            <div className="mt-2 text-xs">
+              {isRazorpayConfigured ? (
+                <Badge variant="secondary" className="border-green-500/50 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                  Razorpay Payments Enabled
+                </Badge>
+              ) : (
+                <Badge variant="destructive">
+                  Payments Not Configured. Please add VITE_RAZORPAY_KEY_ID to your .env file and Rebuild.
+                </Badge>
+              )}
+            </div>
           </CardContent>
           <RedeemCoupon />
         </Card>

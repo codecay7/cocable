@@ -10,8 +10,6 @@ import { gsap } from 'gsap';
 import { ReactCompareSliderImage } from 'react-compare-slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -19,13 +17,21 @@ import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
 
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+};
+
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [upscaledImage, setUpscaledImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scaleFactor, setScaleFactor] = useState<number>(2);
-  const [faceCorrect, setFaceCorrect] = useState<boolean>(false);
   const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
   const { session, user } = useSession();
@@ -79,8 +85,9 @@ const Upscaler = () => {
     setError(null);
 
     try {
-      const { data, error: functionError } = await supabase.functions.invoke('process-feature-use', {
-        body: { feature: `upscaler_${scaleFactor}x${faceCorrect ? '_face-correct' : ''}` }
+      // First, check usage and deduct credits
+      const { data: usageData, error: functionError } = await supabase.functions.invoke('process-feature-use', {
+        body: { feature: `realesrgan_upscaler_${scaleFactor}x` }
       });
 
       if (functionError) {
@@ -93,67 +100,26 @@ const Upscaler = () => {
         throw new Error("Usage check failed");
       }
 
-      if (data.status === 'paid_use_logged') {
+      if (usageData.status === 'paid_use_logged') {
         toast.success("1 credit used.");
         setCredits(c => (c !== null ? c - 1 : null));
-      } else if (data.status === 'free_use_logged') {
-        toast.info(`Free use! You have ${data.remaining_free} free uses left today.`);
+      } else if (usageData.status === 'free_use_logged') {
+        toast.info(`Free use! You have ${usageData.remaining_free} free uses left today.`);
       }
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // If usage check is successful, proceed with upscaling
+      const imageBase64 = await fileToBase64(originalImage);
+      const { data: upscaleData, error: upscaleError } = await supabase.functions.invoke('realesrgan-upscaler', {
+        body: { imageBase64, scaleFactor }
+      });
 
-      const imageElement = new Image();
-      imageElement.src = URL.createObjectURL(originalImage);
-      await imageElement.decode();
+      if (upscaleError) throw upscaleError;
 
-      const canvas = document.createElement('canvas');
-      canvas.width = imageElement.width * scaleFactor;
-      canvas.height = imageElement.height * scaleFactor;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get canvas context');
-      
-      // --- NEW "AI-Enhanced" Upscaling Logic ---
+      setUpscaledImage(upscaleData.upscaledImage);
 
-      // Step 1: High-quality bicubic resize
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
-
-      // Step 2: Texture & Detail Enhancement
-      // This pass enhances mid-tones and textures, giving a more "detailed" look.
-      ctx.filter = 'contrast(1.2) saturate(1.1)';
-      ctx.drawImage(canvas, 0, 0);
-
-      // Step 3: Edge Sharpening
-      // This pass sharpens the edges without over-saturating colors.
-      // We draw the image over itself with a luminosity blend mode to only affect brightness.
-      ctx.globalCompositeOperation = 'luminosity';
-      ctx.filter = 'contrast(1.5) brightness(0.95)';
-      ctx.globalAlpha = 0.15; // Apply this sharpening effect subtly
-      ctx.drawImage(canvas, 0, 0);
-
-      // Reset composite operations for the next steps
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1.0;
-      ctx.filter = 'none';
-
-      // Step 4: Face Correction (if enabled)
-      // This is a more targeted pass for portraits.
-      if (faceCorrect) {
-        ctx.filter = 'brightness(1.05)';
-        // Use soft-light to avoid harsh changes
-        ctx.globalCompositeOperation = 'soft-light';
-        ctx.globalAlpha = 0.4;
-        ctx.drawImage(canvas, 0, 0);
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = 1.0;
-        ctx.filter = 'none';
-      }
-      
-      setUpscaledImage(canvas.toDataURL('image/png'));
     } catch (e: any) {
       if (e.message !== "Usage check failed") {
-        setError("Sorry, we couldn't process this image.");
+        setError("Sorry, we couldn't process this image. The external service may be busy or the image format is not supported. Please try again in a moment.");
         console.error("Upscaling failed:", e);
       }
     } finally {
@@ -168,7 +134,7 @@ const Upscaler = () => {
     }
     const link = document.createElement('a');
     link.href = upscaledImage;
-    link.download = `clearcut-upscaled-${scaleFactor}x.png`;
+    link.download = `clearcut-realesrgan-upscaled-${scaleFactor}x.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -184,9 +150,9 @@ const Upscaler = () => {
     <div className="container mx-auto p-4 md:p-8">
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">AI Image Upscaler & Enhancer</CardTitle>
+          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2"><Sparkles className="text-primary" /> Real-ESRGAN Image Upscaler</CardTitle>
           <CardDescription>
-            Our AI-enhanced upscaler increases resolution and sharpens details. Includes 3 free daily uses, then 1 credit per image.
+            Powered by a state-of-the-art AI model for incredible detail. Includes 3 free daily uses, then 1 credit per image.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -209,13 +175,6 @@ const Upscaler = () => {
                         <Label htmlFor="r2">4x Upscale</Label>
                       </div>
                     </RadioGroup>
-                    <div className="flex items-center space-x-2">
-                      <Switch id="face-correct" checked={faceCorrect} onCheckedChange={setFaceCorrect} />
-                      <Label htmlFor="face-correct" className="flex items-center gap-2">
-                        <span className="flex items-center gap-1"><Sparkles className="w-4 h-4 text-yellow-400" /> Face Correction</span>
-                        <Badge variant="secondary">Better Faces</Badge>
-                      </Label>
-                    </div>
                   </div>
                    {session && (
                     <Alert>
@@ -233,7 +192,7 @@ const Upscaler = () => {
                 </div>
               )}
               <Button onClick={handleUpscale} disabled={!originalImage || isLoading} className="w-full" size="lg">
-                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upscaling with AI...</>) : ('Upscale & Enhance Image')}
+                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upscaling with Real-ESRGAN...</>) : ('Upscale Image')}
               </Button>
             </div>
           )}

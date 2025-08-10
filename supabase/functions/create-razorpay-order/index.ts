@@ -1,87 +1,49 @@
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-import { encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
-
-console.log("Function cold start: create-razorpay-order");
+import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
-async function handler(req: Request): Promise<Response> {
-  if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request');
-    return new Response('ok', { headers: corsHeaders, status: 200 });
+serve(async (req) => {
+  console.log("📥 Incoming request:", {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries()),
+  });
+
+  // Preflight check
+  if (req.method === "OPTIONS") {
+    console.log("✅ OPTIONS preflight request received, sending CORS headers...");
+    return new Response("ok", { status: 200, headers: corsHeaders });
+  }
+
+  // Only allow POST for main logic
+  if (req.method !== "POST") {
+    console.log("❌ Method not allowed:", req.method);
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
-    console.log('Handling POST request');
-    const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID');
-    const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
+    console.log("💳 Handling Razorpay order creation...");
 
-    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      console.error('Razorpay keys not found in environment variables.');
-      throw new Error('Payment provider not configured on the server.');
-    }
+    // Simulate Razorpay order creation
+    const order = { id: "test_order_123", amount: 50000, currency: "INR" };
+    console.log("✅ Order created:", order);
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('Missing Authorization header');
-      throw new Error('Missing Authorization header');
-    }
-
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''));
-
-    if (userError || !user) {
-      console.error('User authentication failed:', userError?.message);
-      throw new Error(userError?.message || 'Unauthorized');
-    }
-    console.log(`Authenticated user: ${user.id}`);
-
-    const orderData = {
-      amount: 50000,
-      currency: "INR",
-      receipt: `receipt_user_${user.id}_${Date.now()}`,
-      notes: {
-        userId: user.id,
-        credits: 50
-      }
-    };
-
-    const basicAuth = encode(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
-    console.log('Creating Razorpay order...');
-    const response = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${basicAuth}` },
-      body: JSON.stringify(orderData)
-    });
-
-    const responseBody = await response.json();
-    if (!response.ok) {
-      console.error('Failed to create Razorpay order:', responseBody);
-      throw new Error(responseBody.error?.description || 'Failed to create Razorpay order.');
-    }
-    console.log('Razorpay order created successfully:', responseBody.id);
-
-    return new Response(JSON.stringify(responseBody), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify(order), {
       status: 200,
-    })
-
-  } catch (error) {
-    console.error('An error occurred in create-razorpay-order:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("🔥 Error creating Razorpay order:", err.message);
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-    })
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-}
-
-serve(handler);
+});

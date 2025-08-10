@@ -49,7 +49,7 @@ serve(async (req) => {
 
     const { error: rpcError } = await supabaseAdmin.rpc('deduct_credits', { 
         user_id_param: user.id,
-        credits_to_dect: creditsToDeduct
+        credits_to_deduct: creditsToDeduct
     });
 
     if (rpcError) {

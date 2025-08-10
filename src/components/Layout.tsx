@@ -9,7 +9,7 @@ export const Layout = () => {
   const isHomePage = location.pathname === '/';
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-gradient-to-br from-sky-100 to-rose-100 dark:from-slate-900 dark:to-slate-950">
+    <div className="relative flex min-h-screen flex-col">
       <Header />
       <main className="flex flex-1 flex-col">
         <Outlet />

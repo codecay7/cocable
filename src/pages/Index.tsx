@@ -50,7 +50,8 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
   const cardContent = (
     <Card className={cn(
       "text-center h-full flex flex-col transition-all duration-300 group",
-      isLive ? "hover:border-primary hover:shadow-lg hover:-translate-y-2 cursor-pointer bg-card/60" : "bg-muted/50 opacity-70"
+      "bg-card/80 backdrop-blur-sm",
+      isLive ? "hover:border-primary hover:shadow-lg hover:-translate-y-2 cursor-pointer" : "opacity-70"
     )}>
       <CardHeader className="items-center">
         <div className="bg-primary/10 text-primary w-16 h-16 flex items-center justify-center rounded-full mb-4 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground">
@@ -91,9 +92,9 @@ const Index = () => {
   return (
     <div ref={containerRef}>
       <div className="container flex flex-col items-center justify-center text-center py-16 md:py-24">
-        <div className="max-w-3xl mb-12">
-          <h1 className="anim-title text-5xl md:text-6xl font-bold tracking-tight font-display">
-            AI-Powered Image Editing, <span className="text-primary">Simplified.</span>
+        <div className="max-w-4xl mb-12">
+          <h1 className="anim-title text-5xl md:text-7xl font-extrabold tracking-tight">
+            AI-Powered Image Editing, <span className="text-gradient bg-gradient-to-r from-primary to-purple-400">Simplified.</span>
           </h1>
           <p className="anim-p mt-6 text-lg md:text-xl text-muted-foreground">
             Instantly remove backgrounds, upscale images, and erase objects with our suite of free AI tools.

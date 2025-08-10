@@ -22,7 +22,6 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Poppins", ...fontFamily.sans],
-        display: ["Orbitron", ...fontFamily.sans],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -89,7 +89,11 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
       rzp.on('payment.failed', function (response: any) {
         showError(`Payment failed: ${response.error.description}`);
       });
-      rzp.open();
+      
+      // Use a timeout to ensure the DOM is ready and state updates are flushed before opening checkout.
+      setTimeout(() => {
+        rzp.open();
+      }, 0);
 
     } catch (e: any) {
       showError(e.message || 'Failed to start purchase. Please try again.');

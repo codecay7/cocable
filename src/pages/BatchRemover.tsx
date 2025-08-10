@@ -4,9 +4,6 @@ import { Button } from '@/components/ui/button';
 import { MultiImageUploader } from '@/components/MultiImageUploader';
 import { FileQueueItem } from '@/components/FileQueueItem';
 import { Loader2, Download, Play, Trash2, CreditCard } from 'lucide-react';
-import * as bodySegmentation from '@tensorflow-models/body-segmentation';
-import '@tensorflow/tfjs-core';
-import '@tensorflow/tfjs-backend-webgl';
 import { showError } from '@/utils/toast';
 import { gsap } from 'gsap';
 import JSZip from 'jszip';
@@ -15,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { toast } from 'sonner';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 export interface QueueFile {
   id: string;
@@ -25,16 +24,32 @@ export interface QueueFile {
   error?: string;
 }
 
+const MAX_WORKERS = navigator.hardwareConcurrency || 4;
+
 const BatchRemover = () => {
   const [queue, setQueue] = useState<QueueFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
+  const [quality, setQuality] = useState<'general' | 'landscape'>('general');
   const cardRef = useRef(null);
+  const workersRef = useRef<Worker[]>([]);
+  const fileQueueRef = useRef<QueueFile[]>([]);
   const { session, user } = useSession();
   const { openModal } = usePurchaseModal();
 
   useEffect(() => {
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
+    
+    // Initialize workers
+    workersRef.current = Array.from({ length: MAX_WORKERS }, () => {
+      const worker = new Worker(new URL('../workers/segmentation.worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e) => handleWorkerMessage(e.data);
+      return worker;
+    });
+
+    return () => {
+      workersRef.current.forEach(worker => worker.terminate());
+    };
   }, []);
 
   useEffect(() => {
@@ -45,13 +60,52 @@ const BatchRemover = () => {
           .select('credits')
           .eq('user_id', user.id)
           .single();
-        if (!error && data) {
-          setCredits(data.credits);
-        }
+        if (!error && data) setCredits(data.credits);
       };
       fetchCredits();
     }
   }, [user]);
+
+  const handleWorkerMessage = (data: any) => {
+    const { type, id, progress, result, error } = data;
+    switch (type) {
+      case 'progress':
+        setQueue(prev => prev.map(f => f.id === id ? { ...f, progress } : f));
+        break;
+      case 'done':
+        setQueue(prev => prev.map(f => f.id === id ? { ...f, status: 'done', progress: 100, result } : f));
+        processNextFileInQueue();
+        break;
+      case 'error':
+        setQueue(prev => prev.map(f => f.id === id ? { ...f, status: 'error', error } : f));
+        processNextFileInQueue();
+        break;
+    }
+  };
+
+  const processNextFileInQueue = () => {
+    if (fileQueueRef.current.length > 0) {
+      const fileToProcess = fileQueueRef.current.shift();
+      if (fileToProcess) {
+        const worker = workersRef.current.find(w => !(w as any).busy);
+        if (worker) {
+          (worker as any).busy = true;
+          setQueue(prev => prev.map(f => f.id === fileToProcess.id ? { ...f, status: 'processing', progress: 10 } : f));
+          worker.postMessage({ id: fileToProcess.id, file: fileToProcess.file, quality });
+          worker.onmessage = (e) => {
+            (worker as any).busy = false;
+            handleWorkerMessage(e.data);
+          };
+        } else {
+          // This case should ideally not happen if logic is correct
+          fileQueueRef.current.unshift(fileToProcess);
+        }
+      }
+    } else {
+      const allDone = queue.every(f => f.status === 'done' || f.status === 'error');
+      if(allDone) setIsProcessing(false);
+    }
+  };
 
   const handleFilesSelect = (files: File[]) => {
     if (!session) {
@@ -59,62 +113,12 @@ const BatchRemover = () => {
       return;
     }
     const newQueueFiles: QueueFile[] = files.map(file => ({
-      id: `${file.name}-${file.lastModified}`,
+      id: `${file.name}-${file.lastModified}-${Math.random()}`,
       file,
       status: 'queued',
       progress: 0,
     }));
     setQueue(prev => [...prev, ...newQueueFiles]);
-  };
-
-  const updateFileProgress = (id: string, progress: number) => {
-    setQueue(prev => prev.map(f => f.id === id ? { ...f, progress } : f));
-  };
-
-  const processFile = async (queueFile: QueueFile) => {
-    setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'processing' } : f));
-    
-    let progressInterval: NodeJS.Timeout;
-    try {
-      let progress = 0;
-      progressInterval = setInterval(() => {
-        progress += 5;
-        if (progress <= 95) {
-          updateFileProgress(queueFile.id, progress);
-        }
-      }, 100);
-
-      const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
-      const segmenter = await bodySegmentation.createSegmenter(model, { runtime: 'tfjs', modelType: 'general' });
-      const imageElement = new Image();
-      imageElement.src = URL.createObjectURL(queueFile.file);
-      await imageElement.decode();
-      const segmentation = await segmenter.segmentPeople(imageElement);
-      const canvas = document.createElement('canvas');
-      canvas.width = imageElement.width;
-      canvas.height = imageElement.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get canvas context');
-      ctx.drawImage(imageElement, 0, 0);
-      const foreground = { r: 0, g: 0, b: 0, a: 255 };
-      const background = { r: 0, g: 0, b: 0, a: 0 };
-      const binaryMask = await bodySegmentation.toBinaryMask(segmentation, foreground, background);
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = imageElement.width;
-      maskCanvas.height = imageElement.height;
-      const maskCtx = maskCanvas.getContext('2d');
-      if (!maskCtx) throw new Error('Could not get mask canvas context');
-      maskCtx.putImageData(binaryMask, 0, 0);
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.drawImage(maskCanvas, 0, 0);
-      
-      clearInterval(progressInterval);
-      setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'done', progress: 100, result: canvas.toDataURL('image/png') } : f));
-    } catch (e: any) {
-      console.error("Batch processing failed for a file:", e);
-      clearInterval(progressInterval!);
-      setQueue(prev => prev.map(f => f.id === queueFile.id ? { ...f, status: 'error', error: 'Processing failed' } : f));
-    }
   };
 
   const handleProcessBatch = async () => {
@@ -135,11 +139,7 @@ const BatchRemover = () => {
     setIsProcessing(true);
     try {
       const { error: functionError } = await supabase.functions.invoke('deduct-credits-for-batch', {
-        body: { 
-          creditsToDeduct: creditsNeeded,
-          feature: 'batch_background_removal',
-          imageCount: filesToProcess.length
-        }
+        body: { creditsToDeduct: creditsNeeded, feature: 'batch_background_removal', imageCount: filesToProcess.length }
       });
 
       if (functionError) {
@@ -156,12 +156,13 @@ const BatchRemover = () => {
       setCredits(c => (c !== null ? c - creditsNeeded : null));
       toast.success(`${creditsNeeded} credit(s) used for processing ${filesToProcess.length} images.`);
 
-      for (const file of filesToProcess) {
-        await processFile(file);
+      fileQueueRef.current = [...filesToProcess];
+      for (let i = 0; i < Math.min(MAX_WORKERS, fileQueueRef.current.length); i++) {
+        processNextFileInQueue();
       }
+
     } catch (error: any) {
       showError(`An error occurred: ${error.message}`);
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -195,6 +196,7 @@ const BatchRemover = () => {
   const handleClearQueue = () => {
     setQueue([]);
     setIsProcessing(false);
+    fileQueueRef.current = [];
   };
 
   const totalFiles = queue.length;
@@ -214,9 +216,7 @@ const BatchRemover = () => {
           {!session ? (
             <div className="text-center space-y-4 p-8 border-2 border-dashed rounded-lg">
               <p className="text-muted-foreground">You need to be logged in to use the Batch Remover.</p>
-              <Button asChild>
-                <Link to="/login">Login or Sign Up</Link>
-              </Button>
+              <Button asChild><Link to="/login">Login or Sign Up</Link></Button>
             </div>
           ) : (
             <>
@@ -224,6 +224,19 @@ const BatchRemover = () => {
               
               {!isQueueEmpty && (
                 <div className="space-y-4">
+                  <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
+                    <RadioGroup defaultValue="general" onValueChange={(value: 'general' | 'landscape') => setQuality(value)} className="flex items-center justify-center space-x-6">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="general" id="q-general" />
+                        <Label htmlFor="q-general">Standard (For People)</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="landscape" id="q-landscape" />
+                        <Label htmlFor="q-landscape">High Quality (For Objects)</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 border rounded-lg bg-muted/50">
                     <div className="text-center sm:text-left">
                       <p className="font-semibold">{totalFiles} files in queue, {doneCount} processed.</p>
@@ -246,9 +259,7 @@ const BatchRemover = () => {
                   </div>
 
                   <div className="space-y-2 max-h-96 overflow-y-auto p-2">
-                    {queue.map(file => (
-                      <FileQueueItem key={file.id} {...file} />
-                    ))}
+                    {queue.map(file => (<FileQueueItem key={file.id} {...file} />))}
                   </div>
 
                   <Button onClick={handleDownloadAll} disabled={isProcessing || doneCount === 0} size="lg" className="w-full">

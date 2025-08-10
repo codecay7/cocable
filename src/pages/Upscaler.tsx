@@ -200,7 +200,7 @@ const Upscaler = () => {
     <div className="container mx-auto p-4 md:p-8">
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2"><Sparkles className="text-primary" /> Real-ESRGAN Image Upscaler</CardTitle>
+          <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2"><Sparkles className="text-primary" /> AI Image Upscaler</CardTitle>
           <CardDescription>
             Powered by a state-of-the-art AI model for incredible detail. Includes 3 free daily uses, then 1 credit per image.
           </CardDescription>
@@ -242,7 +242,7 @@ const Upscaler = () => {
                 </div>
               )}
               <Button onClick={handleUpscale} disabled={!originalImage || isLoading} className="w-full" size="lg">
-                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upscaling with Real-ESRGAN...</>) : ('Upscale Image')}
+                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upscaling with AI...</>) : ('Upscale Image')}
               </Button>
             </div>
           )}

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, Image as ImageIcon } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 
 export const UserNav = () => {
@@ -56,6 +56,12 @@ export const UserNav = () => {
           <Link to="/profile">
             <UserIcon className="mr-2 h-4 w-4" />
             <span>Profile</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/creations">
+            <ImageIcon className="mr-2 h-4 w-4" />
+            <span>My Creations</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

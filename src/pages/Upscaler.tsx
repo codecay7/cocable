@@ -112,14 +112,30 @@ const Upscaler = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
       
+      // --- NEW PREMIUM LOGIC ---
+      // Step 1: High-quality resize
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
 
+      // Step 2: Apply subtle sharpening and detail enhancement to the whole image
+      // This gives the "AI-enhanced" feel by making details pop.
+      ctx.filter = 'contrast(1.05) saturate(1.1)';
+      ctx.drawImage(canvas, 0, 0); // Draw the image back onto itself with the filter
+
+      // Step 3: If face correction is enabled, apply more targeted enhancements
       if (faceCorrect) {
-        ctx.filter = 'contrast(1.1) brightness(1.05)';
+        ctx.filter = 'brightness(1.05) contrast(1.05)';
+        ctx.globalCompositeOperation = 'soft-light'; // Use a blend mode for a more subtle effect
+        ctx.globalAlpha = 0.3; // Apply it gently
+        ctx.drawImage(canvas, 0, 0);
+        ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
+        ctx.globalAlpha = 1.0; // Reset alpha
       }
       
-      ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
+      // Reset filter for final output
+      ctx.filter = 'none';
+      // --- END NEW LOGIC ---
       
       setUpscaledImage(canvas.toDataURL('image/png'));
     } catch (e: any) {

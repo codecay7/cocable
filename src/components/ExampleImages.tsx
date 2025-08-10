@@ -6,10 +6,10 @@ interface ExampleImagesProps {
 }
 
 const exampleUrls = [
-  '/placeholder.svg',
-  '/placeholder.svg',
-  '/placeholder.svg',
-  '/placeholder.svg',
+  'https://picsum.photos/seed/woman/800/800',
+  'https://picsum.photos/seed/product/800/800',
+  'https://picsum.photos/seed/dog/800/800',
+  'https://picsum.photos/seed/car/800/800',
 ];
 
 export const ExampleImages: React.FC<ExampleImagesProps> = ({ onSelect }) => {

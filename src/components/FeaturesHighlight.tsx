@@ -11,6 +11,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export const FeaturesHighlight = () => {
   const sectionRef = useRef(null);
+  const imageUrl = 'https://picsum.photos/seed/portrait/800/1000';
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -41,11 +42,11 @@ export const FeaturesHighlight = () => {
         </div>
         <div className="feature-image">
           <ComparisonSlider
-            original={<ReactCompareSliderImage src="/placeholder.svg" alt="Original Image" />}
+            original={<ReactCompareSliderImage src={imageUrl} alt="Original Image" />}
             modified={
               <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 flex items-center justify-center">
                 <ReactCompareSliderImage
-                  src="/placeholder.svg"
+                  src={imageUrl}
                   alt="Image with background removed"
                   style={{ mixBlendMode: 'darken' }}
                 />

@@ -17,6 +17,7 @@ import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
 import { generateFileHash, base64ToBlob, fileToBase64, resizeImage } from '@/utils/image';
+import { saveCreation } from '@/utils/creations';
 
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -46,6 +47,14 @@ const Upscaler = () => {
       fetchCredits();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (upscaledImage && originalImage && user) {
+      saveCreation(user.id, `upscaler_${scaleFactor}x`, originalImage, upscaledImage).catch(err => {
+        console.error("Failed to save creation in background", err);
+      });
+    }
+  }, [upscaledImage, originalImage, user, scaleFactor]);
 
   const handleFileSelect = (file: File) => {
     setOriginalImage(file);

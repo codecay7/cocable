@@ -21,6 +21,7 @@ import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { saveCreation } from '@/utils/creations';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -82,7 +83,7 @@ const ClearCut = () => {
 
   const handleRemoveBackground = async () => {
     if (!originalImage) return;
-    if (!session) {
+    if (!session || !user) {
       showError("Please log in to process images.");
       return;
     }
@@ -135,7 +136,12 @@ const ClearCut = () => {
       maskCtx.putImageData(binaryMask, 0, 0);
       ctx.globalCompositeOperation = 'destination-in';
       ctx.drawImage(maskCanvas, 0, 0);
-      setProcessedImage(canvas.toDataURL('image/png'));
+      const processedDataUrl = canvas.toDataURL('image/png');
+      setProcessedImage(processedDataUrl);
+
+      saveCreation(user.id, 'background_remover', originalImage, processedDataUrl).catch(err => {
+        console.error("Failed to save creation in background", err);
+      });
 
     } catch (e: any) {
       if (e.message !== "Usage check failed") {

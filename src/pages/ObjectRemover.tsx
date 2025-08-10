@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
+import { saveCreation } from '@/utils/creations';
 
 const ObjectRemover = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -65,7 +66,7 @@ const ObjectRemover = () => {
 
   const startProcessing = async () => {
     if (!originalImage) return false;
-    if (!session) {
+    if (!session || !user) {
       showError("Please log in to process images.");
       return false;
     }
@@ -108,6 +109,11 @@ const ObjectRemover = () => {
 
   const handleComplete = (dataUrl: string) => {
     setProcessedImage(dataUrl);
+    if (user && originalImage) {
+      saveCreation(user.id, 'object_remover', originalImage, dataUrl).catch(err => {
+        console.error("Failed to save creation in background", err);
+      });
+    }
   };
 
   const handleDownload = () => {

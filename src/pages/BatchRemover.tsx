@@ -14,6 +14,7 @@ import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { toast } from 'sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { saveCreation } from '@/utils/creations';
 
 export interface QueueFile {
   id: string;
@@ -73,7 +74,15 @@ const BatchRemover = () => {
         setQueue(prev => prev.map(f => f.id === id ? { ...f, progress } : f));
         break;
       case 'done':
-        setQueue(prev => prev.map(f => f.id === id ? { ...f, status: 'done', progress: 100, result } : f));
+        setQueue(prev => {
+          const originalFile = prev.find(f => f.id === id)?.file;
+          if (user && originalFile && result) {
+            saveCreation(user.id, `batch_remover_${quality}`, originalFile, result).catch(err => {
+              console.error("Failed to save creation in background", err);
+            });
+          }
+          return prev.map(f => f.id === id ? { ...f, status: 'done', progress: 100, result } : f);
+        });
         processNextFileInQueue();
         break;
       case 'error':

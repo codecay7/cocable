@@ -8,8 +8,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET')!
-
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -37,6 +35,12 @@ serve(async (req) => {
   }
 
   try {
+    const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
+    if (!RAZORPAY_KEY_SECRET) {
+      console.error('RAZORPAY_KEY_SECRET is not set in environment variables.');
+      throw new Error('Payment provider not configured on the server.');
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

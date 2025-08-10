@@ -38,6 +38,13 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
       return;
     }
 
+    if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+      showError("Payment provider is not configured. Please contact support.");
+      console.error("VITE_RAZORPAY_KEY_ID is not set in the environment variables.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // 1. Create an order on the backend
       const { data: order, error: orderError } = await supabase.functions.invoke('create-razorpay-order');

@@ -42,7 +42,7 @@ export const RedeemCoupon = () => {
   };
 
   return (
-    <form onSubmit={handleRedeem} className="p-4 border-t mt-4 space-y-3">
+    <form onSubmit={handleRedeem} className="p-4 border-t space-y-3">
       <Label htmlFor="coupon-code" className="font-semibold">Have a coupon code?</Label>
       <div className="flex gap-2">
         <Input

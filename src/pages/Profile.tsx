@@ -133,8 +133,9 @@ const Profile = () => {
 
   return (
     <div className="container mx-auto p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <Card>
+      <h1 className="text-3xl font-bold tracking-tight mb-8">Account Settings</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Your Profile</CardTitle>
             <CardDescription>Manage your account details and preferences.</CardDescription>
@@ -178,33 +179,38 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5" /> Usage & Credits</CardTitle>
-            <CardDescription>Monitor your usage and remaining credits.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold">{isCreditsLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : credits}</div>
-            <p className="text-muted-foreground">credits remaining</p>
-            <Button className="mt-4" onClick={openModal} disabled={!isRazorpayConfigured}>
-              Buy More Credits
-            </Button>
-            <div className="mt-2 text-xs">
-              {isRazorpayConfigured ? (
-                <Badge variant="secondary" className="border-green-500/50 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300">
-                  Razorpay Payments Enabled
-                </Badge>
-              ) : (
-                <Badge variant="destructive">
-                  Payments Not Configured. Please add VITE_RAZORPAY_KEY_ID to your .env file and Rebuild.
-                </Badge>
+        <div className="space-y-8 lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5" /> Usage & Credits</CardTitle>
+              <CardDescription>Monitor your usage and remaining credits.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between items-center p-6 bg-muted/50 rounded-lg">
+                <div>
+                  <p className="text-sm text-muted-foreground">Credits Remaining</p>
+                  <div className="text-4xl font-bold">
+                    {isCreditsLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : credits}
+                  </div>
+                </div>
+                <Button onClick={openModal} disabled={!isRazorpayConfigured}>
+                  Buy Credits
+                </Button>
+              </div>
+              {!isRazorpayConfigured && (
+                <div className="mt-4">
+                  <Badge variant="destructive">
+                    Payments Not Configured
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-1">Please add VITE_RAZORPAY_KEY_ID to your .env file and Rebuild.</p>
+                </div>
               )}
-            </div>
-          </CardContent>
-          <RedeemCoupon />
-        </Card>
+            </CardContent>
+            <RedeemCoupon />
+          </Card>
 
-        <TransactionHistory />
+          <TransactionHistory />
+        </div>
       </div>
     </div>
   );

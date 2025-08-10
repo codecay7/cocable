@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -7,9 +7,8 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Explicitly handle preflight requests with a 200 OK response
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders, status: 200 })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -48,7 +47,6 @@ serve(async (req) => {
         });
     }
 
-    // Call the new SQL function
     const { error: rpcError } = await supabaseAdmin.rpc('deduct_credits', { 
         user_id_param: user.id,
         credits_to_deduct: creditsToDeduct
@@ -64,7 +62,6 @@ serve(async (req) => {
       throw rpcError;
     }
 
-    // Log usage for each image
     const logs = Array.from({ length: imageCount }).map(() => ({
         user_id: user.id,
         feature_name: feature
@@ -75,7 +72,6 @@ serve(async (req) => {
         .insert(logs);
 
     if (logError) {
-        // Don't fail the whole request if logging fails, but log it server-side
         console.error('Failed to log batch premium usage:', logError);
     }
 

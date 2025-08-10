@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -39,7 +39,6 @@ serve(async (req) => {
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    // Count both free and premium uses
     const { count: freeCount, error: freeCountError } = await supabaseAdmin
       .from('free_usage_log')
       .select('*', { count: 'exact', head: true })
@@ -59,7 +58,6 @@ serve(async (req) => {
     const totalUsage = (freeCount ?? 0) + (premiumCount ?? 0);
 
     if (totalUsage < FREE_LIMIT_PER_DAY) {
-      // It's a free use
       const { error: logError } = await supabaseAdmin
         .from('free_usage_log')
         .insert({ user_id: user.id, feature_name: feature });
@@ -73,20 +71,18 @@ serve(async (req) => {
         status: 200,
       });
     } else {
-      // It's a paid use, deduct 1 credit
       const { error: rpcError } = await supabaseAdmin.rpc('deduct_credit', { user_id_param: user.id });
 
       if (rpcError) {
         if (rpcError.message.includes('insufficient_credits')) {
           return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 402, // Payment Required
+            status: 402,
           });
         }
         throw rpcError;
       }
 
-      // Log the paid usage
       const { error: logError } = await supabaseAdmin
         .from('premium_usage_log')
         .insert({ user_id: user.id, feature_name: feature });

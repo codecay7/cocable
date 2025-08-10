@@ -16,7 +16,7 @@ import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
-import { generateFileHash, base64ToBlob, fileToBase64 } from '@/utils/image';
+import { generateFileHash, base64ToBlob, fileToBase64, resizeImage } from '@/utils/image';
 
 const Upscaler = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -78,14 +78,28 @@ const Upscaler = () => {
     const loadingToastId = toast.loading("Preparing your image...");
 
     try {
+      // Pre-scaling logic
+      let imageToProcess = originalImage;
+      const MAX_DIMENSION = 2048;
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(originalImage);
+      img.src = objectUrl;
+      await new Promise(resolve => { img.onload = resolve });
+      URL.revokeObjectURL(objectUrl);
+
+      if (img.width > MAX_DIMENSION || img.height > MAX_DIMENSION) {
+        toast.info("Image is very large. Pre-scaling for compatibility...", { id: loadingToastId });
+        imageToProcess = await resizeImage(originalImage, MAX_DIMENSION);
+      }
+
       // 1. Generate hash for caching
       toast.info("Generating unique image signature...", { id: loadingToastId });
-      const hash = await generateFileHash(originalImage);
+      const hash = await generateFileHash(imageToProcess);
       const cachePath = `${hash}_${scaleFactor}x.png`;
 
       // 2. Check for cached result in a public bucket
       toast.info("Checking for a cached version...", { id: loadingToastId });
-      const { data: cachedData, error: cacheError } = await supabase.storage
+      const { data: cachedData } = await supabase.storage
         .from('upscaler_cache')
         .download(cachePath);
 
@@ -121,7 +135,7 @@ const Upscaler = () => {
       
       // 4. Call the upscaler function
       toast.info("Sending to the AI upscaler... This may take a moment.", { id: loadingToastId });
-      const imageBase64 = await fileToBase64(originalImage);
+      const imageBase64 = await fileToBase64(imageToProcess);
       const { data: upscaleData, error: upscaleError } = await supabase.functions.invoke('realesrgan-upscaler', {
         body: { imageBase64, scaleFactor }
       });

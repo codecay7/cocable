@@ -20,3 +20,44 @@ export const fileToBase64 = (file: File): Promise<string> => {
     reader.onerror = error => reject(error);
   });
 };
+
+export const resizeImage = (file: File, maxSize: number): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.src = URL.createObjectURL(file);
+    image.onload = () => {
+      let { width, height } = image;
+
+      if (width > maxSize || height > maxSize) {
+        if (width > height) {
+          height = Math.round((height * maxSize) / width);
+          width = maxSize;
+        } else {
+          width = Math.round((width * maxSize) / height);
+          height = maxSize;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return reject(new Error('Could not get canvas context'));
+      }
+      ctx.drawImage(image, 0, 0, width, height);
+      
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          return reject(new Error('Canvas to Blob conversion failed'));
+        }
+        const newFile = new File([blob], file.name, {
+          type: file.type,
+          lastModified: Date.now(),
+        });
+        resolve(newFile);
+      }, file.type);
+    };
+    image.onerror = reject;
+  });
+};

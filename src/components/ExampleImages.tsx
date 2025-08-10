@@ -6,10 +6,10 @@ interface ExampleImagesProps {
 }
 
 const exampleUrls = [
-  'https://picsum.photos/seed/woman/800/800',
-  'https://picsum.photos/seed/product/800/800',
-  'https://picsum.photos/seed/dog/800/800',
-  'https://picsum.photos/seed/car/800/800',
+  'https://images.pexels.com/photos/3772510/pexels-photo-3772510.jpeg?auto=compress&cs=tinysrgb&w=800&h=800&dpr=1',
+  'https://images.pexels.com/photos/1050244/pexels-photo-1050244.jpeg?auto=compress&cs=tinysrgb&w=800&h=800&dpr=1',
+  'https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&w=800&h=800&dpr=1',
+  'https://images.pexels.com/photos/3729464/pexels-photo-3729464.jpeg?auto=compress&cs=tinysrgb&w=800&h=800&dpr=1',
 ];
 
 export const ExampleImages: React.FC<ExampleImagesProps> = ({ onSelect }) => {

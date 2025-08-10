@@ -11,7 +11,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export const FeaturesHighlight = () => {
   const sectionRef = useRef(null);
-  const imageUrl = 'https://picsum.photos/seed/portrait/800/1000';
+  const imageUrl = 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=800&h=1000&dpr=1';
 
   useEffect(() => {
     const ctx = gsap.context(() => {

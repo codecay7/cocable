@@ -14,6 +14,7 @@ import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RedeemCoupon } from '@/components/RedeemCoupon';
 import { Badge } from '@/components/ui/badge';
+import { TransactionHistory } from '@/components/TransactionHistory';
 
 interface ProfileData {
   id: string;
@@ -242,6 +243,8 @@ const Profile = () => {
           </CardContent>
           <RedeemCoupon />
         </Card>
+
+        <TransactionHistory />
 
         <Card>
           <CardHeader>

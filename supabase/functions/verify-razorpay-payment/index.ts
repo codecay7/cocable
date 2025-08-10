@@ -46,9 +46,28 @@ serve(async (req) => {
       throw new Error('Payment verification failed. Signature mismatch.');
     }
 
+    const credits_to_add = 50;
+    const amount_paid = 50000;
+
+    // Log the transaction
+    const { error: transactionError } = await supabaseAdmin
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+        amount_paid: amount_paid,
+        credits_purchased: credits_to_add,
+        razorpay_payment_id: payment_id,
+        currency: 'INR'
+      });
+
+    if (transactionError) {
+      // Log this critical error but don't fail the whole process, adding credits is more important
+      console.error('CRITICAL: Failed to log transaction after successful payment:', transactionError.message);
+    }
+
     const { error: rpcError } = await supabaseAdmin.rpc('add_credits', {
       user_id_param: user.id,
-      credits_to_add: 50
+      credits_to_add: credits_to_add
     });
     if (rpcError) {
       throw new Error(`Failed to add credits: ${rpcError.message}`);

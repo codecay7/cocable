@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Scissors, ArrowUpRightSquare, Menu, Eraser, CopyPlus } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, Menu, Eraser, CopyPlus, Palette } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { cn } from '@/lib/utils';
 import {
@@ -32,6 +32,12 @@ const tools = [
     path: "/object-remover",
     description: "Erase unwanted objects or people from photos.",
     icon: <Eraser className="h-5 w-5" />,
+  },
+  {
+    name: "AI Photo Colorizer",
+    path: "/colorizer",
+    description: "Bring black and white photos to life.",
+    icon: <Palette className="h-5 w-5" />,
   },
   {
     name: "Batch Remover",

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Scissors, ArrowUpRightSquare, Eraser, CopyPlus } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, Eraser, CopyPlus, Palette } from 'lucide-react';
 
 const switcherTools = [
   {
@@ -21,6 +21,12 @@ const switcherTools = [
     path: "/object-remover",
     description: "Erase unwanted objects or people from photos.",
     icon: <Eraser className="h-6 w-6" />,
+  },
+  {
+    name: "AI Photo Colorizer",
+    path: "/colorizer",
+    description: "Bring old black and white photos to life.",
+    icon: <Palette className="h-6 w-6" />,
   },
   {
     name: "Batch Background Remover",
@@ -46,7 +52,7 @@ export const ToolSwitcher = () => {
         <h2 className="text-3xl font-bold tracking-tight">Explore Other Tools</h2>
         <p className="mt-2 text-lg text-muted-foreground">
           Finished with this tool? Jump right into another one.
-        </p>
+        p>
       </div>
       <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         {otherTools.map(tool => (

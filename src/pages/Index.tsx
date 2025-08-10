@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Scissors, ArrowUpRightSquare, CopyPlus, ArrowRight, Eraser } from 'lucide-react';
+import { Scissors, ArrowUpRightSquare, CopyPlus, ArrowRight, Eraser, Palette } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { HowItWorks } from '@/components/HowItWorks';
@@ -33,6 +33,13 @@ const tools = [
     path: "/object-remover",
     description: "Erase unwanted objects, people, or text from your photos.",
     icon: <Eraser className="h-8 w-8" />,
+    status: 'live',
+  },
+  {
+    name: "AI Photo Colorizer",
+    path: "/colorizer",
+    description: "Bring old black and white photos to life with realistic color.",
+    icon: <Palette className="h-8 w-8" />,
     status: 'live',
   },
   {

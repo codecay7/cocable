@@ -9,6 +9,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders, status: 200 })
   }
@@ -18,11 +19,7 @@ serve(async (req) => {
     const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
 
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      console.error('Razorpay secrets are not set in environment variables.');
-      return new Response(JSON.stringify({ error: 'Payment provider not configured on the server.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
+      throw new Error('Payment provider not configured on the server.');
     }
 
     const supabaseAdmin = createClient(
@@ -32,19 +29,13 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-        return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 401,
-        });
+      throw new Error('Missing Authorization header');
     }
 
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''));
 
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: userError?.message || 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
+      throw new Error(userError?.message || 'Unauthorized');
     }
 
     const orderData = {
@@ -60,17 +51,12 @@ serve(async (req) => {
     const basicAuth = encode(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
     const response = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${basicAuth}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${basicAuth}` },
       body: JSON.stringify(orderData)
     });
 
     const responseBody = await response.json();
-
     if (!response.ok) {
-      console.error('Razorpay API error:', responseBody);
       throw new Error(responseBody.error?.description || 'Failed to create Razorpay order.');
     }
 
@@ -80,9 +66,7 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Edge function error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })

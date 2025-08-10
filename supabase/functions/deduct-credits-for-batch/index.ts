@@ -8,7 +8,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders, status: 200 })
   }
@@ -21,33 +20,14 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization')!
     const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''))
-
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      })
+      throw new Error('Unauthorized');
     }
 
     const { creditsToDeduct, feature, imageCount } = await req.json();
-    if (!creditsToDeduct || creditsToDeduct <= 0) {
-      return new Response(JSON.stringify({ error: 'Credits to deduct must be a positive number.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-    if (!feature) {
-        return new Response(JSON.stringify({ error: 'Feature name is required' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-    }
-    if (!imageCount || imageCount <= 0) {
-        return new Response(JSON.stringify({ error: 'Image count is required.' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-        });
-    }
+    if (!creditsToDeduct || creditsToDeduct <= 0) throw new Error('Credits to deduct must be a positive number.');
+    if (!feature) throw new Error('Feature name is required');
+    if (!imageCount || imageCount <= 0) throw new Error('Image count is required.');
 
     const { error: rpcError } = await supabaseAdmin.rpc('deduct_credits', { 
         user_id_param: user.id,
@@ -57,35 +37,21 @@ serve(async (req) => {
     if (rpcError) {
       if (rpcError.message.includes('insufficient_credits')) {
         return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 402, // Payment Required
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402,
         });
       }
       throw rpcError;
     }
 
-    const logs = Array.from({ length: imageCount }).map(() => ({
-        user_id: user.id,
-        feature_name: feature
-    }));
-
-    const { error: logError } = await supabaseAdmin
-        .from('premium_usage_log')
-        .insert(logs);
-
-    if (logError) {
-        console.error('Failed to log batch premium usage:', logError);
-    }
-
+    const logs = Array.from({ length: imageCount }).map(() => ({ user_id: user.id, feature_name: feature }));
+    await supabaseAdmin.from('premium_usage_log').insert(logs);
 
     return new Response(JSON.stringify({ message: 'Credits deducted successfully' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500,
     })
   }
 })

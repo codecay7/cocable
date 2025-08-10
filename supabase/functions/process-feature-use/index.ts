@@ -10,7 +10,6 @@ const corsHeaders = {
 const FREE_LIMIT_PER_DAY = 3;
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders, status: 200 })
   }
@@ -23,86 +22,51 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization')!
     const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''))
-
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      })
+      throw new Error('Unauthorized');
     }
 
     const { feature } = await req.json();
     if (!feature) {
-      return new Response(JSON.stringify({ error: 'Feature name is required' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
+      throw new Error('Feature name is required');
     }
 
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
     const { count: freeCount, error: freeCountError } = await supabaseAdmin
-      .from('free_usage_log')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('used_at', twentyFourHoursAgo);
-
+      .from('free_usage_log').select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id).gte('used_at', twentyFourHoursAgo);
     if (freeCountError) throw freeCountError;
 
     const { count: premiumCount, error: premiumCountError } = await supabaseAdmin
-      .from('premium_usage_log')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('used_at', twentyFourHoursAgo);
-    
+      .from('premium_usage_log').select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id).gte('used_at', twentyFourHoursAgo);
     if (premiumCountError) throw premiumCountError;
 
     const totalUsage = (freeCount ?? 0) + (premiumCount ?? 0);
 
     if (totalUsage < FREE_LIMIT_PER_DAY) {
-      const { error: logError } = await supabaseAdmin
-        .from('free_usage_log')
-        .insert({ user_id: user.id, feature_name: feature });
-
-      if (logError) {
-        console.error('Failed to log free usage:', logError);
-      }
-
+      await supabaseAdmin.from('free_usage_log').insert({ user_id: user.id, feature_name: feature });
       return new Response(JSON.stringify({ status: 'free_use_logged', remaining_free: FREE_LIMIT_PER_DAY - totalUsage - 1 }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
       });
     } else {
       const { error: rpcError } = await supabaseAdmin.rpc('deduct_credit', { user_id_param: user.id });
-
       if (rpcError) {
         if (rpcError.message.includes('insufficient_credits')) {
           return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402,
           });
         }
         throw rpcError;
       }
-
-      const { error: logError } = await supabaseAdmin
-        .from('premium_usage_log')
-        .insert({ user_id: user.id, feature_name: feature });
-
-      if (logError) {
-        console.error('Failed to log premium usage:', logError);
-      }
-
+      await supabaseAdmin.from('premium_usage_log').insert({ user_id: user.id, feature_name: feature });
       return new Response(JSON.stringify({ status: 'paid_use_logged' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
       });
     }
-
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500,
     })
   }
 })

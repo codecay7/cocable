@@ -10,7 +10,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders, status: 200 })
   }
@@ -18,7 +17,6 @@ serve(async (req) => {
   try {
     const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
     if (!RAZORPAY_KEY_SECRET) {
-      console.error('RAZORPAY_KEY_SECRET is not set in environment variables.');
       throw new Error('Payment provider not configured on the server.');
     }
 
@@ -33,7 +31,6 @@ serve(async (req) => {
     }
     
     const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''))
-
     if (!user) {
       throw new Error('Unauthorized: Invalid token');
     }
@@ -44,25 +41,20 @@ serve(async (req) => {
     }
 
     const body = `${order_id}|${payment_id}`;
-
     const isVerified = await verifySignature(body, signature, RAZORPAY_KEY_SECRET);
-
     if (!isVerified) {
       throw new Error('Payment verification failed. Signature mismatch.');
     }
 
-    const credits_to_add = 50;
-
     const { error: rpcError } = await supabaseAdmin.rpc('add_credits', {
       user_id_param: user.id,
-      credits_to_add: credits_to_add
+      credits_to_add: 50
     });
-
     if (rpcError) {
       throw new Error(`Failed to add credits: ${rpcError.message}`);
     }
 
-    return new Response(JSON.stringify({ success: true, message: 'Payment verified and credits added.' }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
@@ -77,15 +69,12 @@ serve(async (req) => {
 
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
+    "raw", new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
+    false, ["sign"],
   );
   const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
   const generatedSignature = encodeToString(new Uint8Array(mac));
-
   try {
     return timingSafeEqual(
       new TextEncoder().encode(generatedSignature),

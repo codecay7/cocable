@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { Loader2, CreditCard, CheckCircle } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,12 +27,13 @@ interface BuyCreditsModalProps {
 
 export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpenChange }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { user, session } = useSession();
+  const { user } = useSession();
   const queryClient = useQueryClient();
 
   const handlePurchase = async () => {
     setIsLoading(true);
-    if (!user || !session) {
+
+    if (!user) {
       showError("You must be logged in to make a purchase.");
       setIsLoading(false);
       return;
@@ -40,26 +41,35 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
 
     if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
       showError("Payment provider is not configured. Please contact support.");
-      console.error("VITE_RAZORPAY_KEY_ID is not set in the environment variables.");
       setIsLoading(false);
       return;
     }
 
+    let order;
+    const orderToastId = showLoading('Initializing secure payment...');
     try {
-      // 1. Create an order on the backend
-      const { data: order, error: orderError } = await supabase.functions.invoke('create-razorpay-order');
-      if (orderError) throw orderError;
+      const { data, error } = await supabase.functions.invoke('create-razorpay-order');
+      if (error) throw error;
+      order = data;
+      dismissToast(orderToastId);
+      showSuccess('Payment gateway ready.');
+    } catch (e: any) {
+      dismissToast(orderToastId);
+      showError(e.message || 'Could not connect to payment gateway.');
+      setIsLoading(false);
+      return;
+    }
 
-      // 2. Open Razorpay Checkout
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: 'ClearCut AI',
-        description: '50 Credits Pack',
-        order_id: order.id,
-        handler: async function (response: any) {
-          // 3. Verify the payment
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      amount: order.amount,
+      currency: order.currency,
+      name: 'ClearCut AI',
+      description: '50 Credits Pack',
+      order_id: order.id,
+      handler: async function (response: any) {
+        const verificationToastId = showLoading('Verifying payment...');
+        try {
           const { error: verificationError } = await supabase.functions.invoke('verify-razorpay-payment', {
             body: {
               order_id: response.razorpay_order_id,
@@ -67,37 +77,41 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
               signature: response.razorpay_signature,
             },
           });
-
-          if (verificationError) {
-            showError(`Payment verification failed: ${verificationError.message}`);
-          } else {
-            showSuccess('Payment successful! 50 credits have been added to your account.');
-            await queryClient.invalidateQueries({ queryKey: ['credits', user.id] });
-            onOpenChange(false);
+          dismissToast(verificationToastId);
+          if (verificationError) throw verificationError;
+          
+          showSuccess('Payment successful! 50 credits have been added.');
+          await queryClient.invalidateQueries({ queryKey: ['credits', user.id] });
+          onOpenChange(false);
+        } catch (e: any) {
+          dismissToast(verificationToastId);
+          showError(e.message || 'Payment verification failed.');
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      prefill: {
+        name: user.user_metadata?.first_name || '',
+        email: user.email,
+      },
+      theme: {
+        color: '#3b82f6',
+      },
+      modal: {
+        ondismiss: () => {
+          if (isLoading) {
+            setIsLoading(false);
+            showError('Payment was cancelled.');
           }
-        },
-        prefill: {
-          name: user.user_metadata?.first_name || '',
-          email: user.email,
-        },
-        theme: {
-          color: '#3b82f6', // A nice blue to match the theme
-        },
-      };
+        }
+      }
+    };
 
+    try {
       const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response: any) {
-        showError(`Payment failed: ${response.error.description}`);
-      });
-      
-      // Use a timeout to ensure the DOM is ready and state updates are flushed before opening checkout.
-      setTimeout(() => {
-        rzp.open();
-      }, 0);
-
-    } catch (e: any) {
-      showError(e.message || 'Failed to start purchase. Please try again.');
-    } finally {
+      rzp.open();
+    } catch (e) {
+      showError('Could not open payment window.');
       setIsLoading(false);
     }
   };
@@ -124,7 +138,7 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
         <DialogFooter>
           <Button onClick={handlePurchase} disabled={isLoading} className="w-full" size="lg">
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-            {isLoading ? 'Initializing...' : 'Buy Now'}
+            {isLoading ? 'Processing...' : 'Buy Now'}
           </Button>
         </DialogFooter>
       </DialogContent>

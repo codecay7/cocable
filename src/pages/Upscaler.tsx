@@ -68,7 +68,7 @@ const Upscaler = () => {
 
   const handleUpscale = async () => {
     if (!originalImage) return;
-    if (!session) {
+    if (!session || !user) {
       showError("Please log in to process images.");
       return;
     }
@@ -97,11 +97,15 @@ const Upscaler = () => {
       const hash = await generateFileHash(imageToProcess);
       const cachePath = `${hash}_${scaleFactor}x.png`;
 
-      // 2. Check for cached result in a public bucket
+      // 2. Check for cached result
       toast.info("Checking for a cached version...", { id: loadingToastId });
-      const { data: cachedData } = await supabase.storage
+      const { data: cachedData, error: cacheError } = await supabase.storage
         .from('upscaler_cache')
         .download(cachePath);
+
+      if (cacheError && cacheError.message !== 'The resource was not found') {
+        console.warn("Cache check failed with an unexpected error. This might be a permissions issue with the storage bucket.", cacheError);
+      }
 
       if (cachedData) {
         toast.success("Found a cached result! ✨", { id: loadingToastId });
@@ -156,14 +160,15 @@ const Upscaler = () => {
         });
       
       if (uploadError) {
-        console.warn("Failed to cache the result:", uploadError.message);
+        console.error("Failed to cache the result:", uploadError.message);
+        toast.warning("Could not save to cache. Future uses of this image may use credits.", { id: loadingToastId });
+      } else {
+        toast.success("Upscaling complete! Result is cached.", { id: loadingToastId });
       }
 
-      toast.success("Upscaling complete!", { id: loadingToastId });
-
     } catch (e: any) {
-      toast.dismiss(loadingToastId);
       if (e.message !== "Usage check failed") {
+        toast.dismiss(loadingToastId);
         setError("Sorry, we couldn't process this image. The external service may be busy or the image format is not supported. Please try again in a moment.");
         console.error("Upscaling failed:", e);
       }

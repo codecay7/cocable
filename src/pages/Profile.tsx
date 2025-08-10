@@ -6,8 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ImageUploader } from '@/components/ImageUploader';
 import { showError, showSuccess } from '@/utils/toast';
 import { Loader2, CreditCard } from 'lucide-react';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
@@ -15,6 +13,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RedeemCoupon } from '@/components/RedeemCoupon';
 import { Badge } from '@/components/ui/badge';
 import { TransactionHistory } from '@/components/TransactionHistory';
+import { AvatarUploader } from '@/components/AvatarUploader';
+import { Separator } from '@/components/ui/separator';
 
 interface ProfileData {
   id: string;
@@ -140,22 +140,19 @@ const Profile = () => {
             <CardTitle>Your Profile</CardTitle>
             <CardDescription>Manage your account details and preferences.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             {isLoading ? (
               <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
             ) : (
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url} />
-                    <AvatarFallback>{formData?.first_name?.[0] || user?.email?.[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-grow">
-                    <Label>Profile Picture</Label>
-                    <ImageUploader onFileSelect={setNewAvatarFile} />
-                    <p className="text-xs text-muted-foreground mt-2">Upload a new avatar. It will be updated when you save your profile.</p>
-                  </div>
-                </div>
+              <form onSubmit={handleUpdateProfile} className="space-y-8">
+                <AvatarUploader
+                  src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url}
+                  fallback={formData?.first_name?.[0] || user?.email?.[0] || 'U'}
+                  onFileSelect={setNewAvatarFile}
+                />
+                
+                <Separator />
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
@@ -166,14 +163,21 @@ const Profile = () => {
                     <Input id="lastName" value={formData?.last_name || ''} onChange={(e) => setFormData(p => ({...p, last_name: e.target.value}))} />
                   </div>
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" value={user?.email || ''} disabled />
+                  <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
                 </div>
-                <Button type="submit" disabled={isUpdating}>
-                  {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Changes
-                </Button>
+
+                <Separator />
+
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={isUpdating}>
+                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </div>
               </form>
             )}
           </CardContent>

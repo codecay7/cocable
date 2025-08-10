@@ -10,6 +10,7 @@ const corsHeaders = {
 const FREE_LIMIT_PER_DAY = 3;
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders, status: 200 })
   }

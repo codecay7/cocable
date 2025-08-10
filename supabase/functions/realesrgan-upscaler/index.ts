@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Using a public, reliable Real-ESRGAN model hosted on Hugging Face Spaces
-const HF_API_URL = "https://akhaliq-realesrgan.hf.space/run/predict";
+// Using a different public Real-ESRGAN model hosted on Hugging Face Spaces for better reliability
+const HF_API_URL = "https://multimodalart-realesrgan.hf.space/run/predict";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

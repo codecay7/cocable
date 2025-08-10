@@ -13,15 +13,14 @@ import { gsap } from 'gsap';
 import { EditPanel } from '@/components/EditPanel';
 import { CanvasEditor } from '@/components/CanvasEditor';
 import { ReactCompareSliderImage } from 'react-compare-slider';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -282,7 +281,9 @@ const ClearCut = () => {
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">ClearCut AI Background Remover</CardTitle>
           <CardDescription className="text-center">
-            Includes 3 free daily uses, then 1 credit per image. High Quality provides better results for complex scenes.
+            This tool uses a model optimized for people. For best results with objects or complex scenes, use High Quality mode.
+            <br />
+            Includes 3 free daily uses, then 1 credit per image.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -296,18 +297,22 @@ const ClearCut = () => {
                     <img src={URL.createObjectURL(originalImage)} alt="Preview" className="max-h-[40vh] max-w-full mx-auto rounded-md object-contain" />
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">{originalImage.name}</p>
-                  <div className="flex items-center justify-center space-x-2">
-                    <Label htmlFor="quality-switch">Standard</Label>
-                    <Switch
-                      id="quality-switch"
-                      checked={quality === 'landscape'}
-                      onCheckedChange={(checked) => setQuality(checked ? 'landscape' : 'general')}
-                    />
-                    <Label htmlFor="quality-switch" className="font-semibold text-primary flex items-center gap-2">
-                      High Quality
-                      <Badge variant="secondary">Better Detail</Badge>
-                    </Label>
-                  </div>
+                  <RadioGroup defaultValue="general" onValueChange={(value: 'general' | 'landscape') => setQuality(value)} className="flex items-center justify-center space-x-6 pt-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="general" id="q-general" />
+                      <Label htmlFor="q-general" className="cursor-pointer">
+                        <p className="font-semibold">Standard</p>
+                        <p className="text-xs text-muted-foreground">Fastest, best for people</p>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="landscape" id="q-landscape" />
+                      <Label htmlFor="q-landscape" className="cursor-pointer">
+                        <p className="font-semibold">High Quality</p>
+                        <p className="text-xs text-muted-foreground">Better for objects & scenes</p>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                   {session && (
                     <Alert>
                       <Info className="h-4 w-4" />

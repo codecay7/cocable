@@ -4,16 +4,17 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Undo, Redo, Trash2, Wand2, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { supabase } from '@/integrations/supabase/client';
+import { showError } from '@/utils/toast';
 
 interface MarkingCanvasProps {
   imageSrc: string;
   onComplete: (dataUrl: string) => void;
   onProcessStart: () => Promise<boolean>;
   isProcessing: boolean;
-  model: 'swift' | 'smart-fill';
 }
 
-export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComplete, onProcessStart, isProcessing, model }) => {
+export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComplete, onProcessStart, isProcessing }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,68 +155,54 @@ export const MarkingCanvas: React.FC<MarkingCanvasProps> = ({ imageSrc, onComple
     if (!canProcess) return;
 
     setIsApplying(true);
-    await new Promise(resolve => setTimeout(resolve, model === 'smart-fill' ? 2000 : 500));
-
+    
     const imageCanvas = imageCanvasRef.current;
     const drawingCanvas = drawingCanvasRef.current;
     if (!imageCanvas || !drawingCanvas) {
+      showError("Canvas elements not found.");
       setIsApplying(false);
       return;
     }
 
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = imageCanvas.width;
-    finalCanvas.height = imageCanvas.height;
-    const finalCtx = finalCanvas.getContext('2d');
-    if (!finalCtx) {
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = drawingCanvas.width;
+    maskCanvas.height = drawingCanvas.height;
+    const maskCtx = maskCanvas.getContext('2d');
+    if (!maskCtx) {
+      showError("Could not create mask canvas.");
       setIsApplying(false);
       return;
     }
-
-    const fillCanvas = document.createElement('canvas');
-    fillCanvas.width = imageCanvas.width;
-    fillCanvas.height = imageCanvas.height;
-    const fillCtx = fillCanvas.getContext('2d');
-    if (!fillCtx) {
-      setIsApplying(false);
-      return;
-    }
-
-    if (model === 'smart-fill') {
-      fillCtx.filter = 'blur(50px)';
-      fillCtx.drawImage(imageCanvas, 0, 0);
-      fillCtx.globalAlpha = 0.5;
-      fillCtx.filter = 'blur(15px)';
-      fillCtx.drawImage(imageCanvas, 0, 0);
-      fillCtx.globalAlpha = 1.0;
-      const noiseCanvas = document.createElement('canvas');
-      noiseCanvas.width = imageCanvas.width;
-      noiseCanvas.height = imageCanvas.height;
-      const noiseCtx = noiseCanvas.getContext('2d');
-      if(noiseCtx) {
-        const noiseData = noiseCtx.createImageData(noiseCanvas.width, noiseCanvas.height);
-        const buffer = new Uint32Array(noiseData.data.buffer);
-        for (let i = 0; i < buffer.length; i++) {
-          buffer[i] = (255 * Math.random()) | (255 * Math.random() << 8) | (255 * Math.random() << 16) | (5 << 24);
+    maskCtx.fillStyle = 'black';
+    maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+    maskCtx.drawImage(drawingCanvas, 0, 0);
+    const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 0 || data[i+1] > 0 || data[i+2] > 0) {
+            data[i] = 255; data[i+1] = 255; data[i+2] = 255; data[i+3] = 255;
         }
-        noiseCtx.putImageData(noiseData, 0, 0);
-        fillCtx.drawImage(noiseCanvas, 0, 0);
-      }
-    } else {
-      fillCtx.filter = 'blur(25px)';
-      fillCtx.drawImage(imageCanvas, 0, 0);
     }
-    fillCtx.filter = 'none';
+    maskCtx.putImageData(imageData, 0, 0);
 
-    finalCtx.drawImage(imageCanvas, 0, 0);
-    finalCtx.globalCompositeOperation = 'destination-out';
-    finalCtx.drawImage(drawingCanvas, 0, 0);
-    finalCtx.globalCompositeOperation = 'destination-over';
-    finalCtx.drawImage(fillCanvas, 0, 0);
-    finalCtx.globalCompositeOperation = 'source-over';
+    const imageBase64 = imageCanvas.toDataURL('image/jpeg');
+    const maskBase64 = maskCanvas.toDataURL('image/png');
 
-    onComplete(finalCanvas.toDataURL('image/png'));
-    setIsApplying(false);
+    try {
+      const { data: inpaintData, error } = await supabase.functions.invoke('inpaint-image', {
+        body: { imageBase64, maskBase64 }
+      });
+
+      if (error) throw error;
+
+      onComplete(inpaintData.inpaintedImage);
+
+    } catch (e: any) {
+      showError(e.message || "Inpainting failed. The service might be busy.");
+      console.error("Inpainting failed:", e);
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   const totalProcessing = isProcessing || isApplying;

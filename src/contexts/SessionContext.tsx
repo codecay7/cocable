@@ -20,26 +20,21 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    setLoading(true);
+    
+    // onAuthStateChange is the recommended way to listen for authentication events.
+    // It fires once on load with the initial session, and then again whenever the session changes.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-
-      if (_event === 'SIGNED_IN' && session?.user) {
-        const { error } = await supabase
-          .from('profiles')
-          .upsert({ id: session.user.id });
-        
-        if (error) {
-          console.error('Failed to create/upsert user profile:', error.message);
-        }
-      }
     });
 
+    // The cleanup function runs when the component unmounts, preventing memory leaks.
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // The empty dependency array ensures this effect runs only once.
 
   const value = {
     session,

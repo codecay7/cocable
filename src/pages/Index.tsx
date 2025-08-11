@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Scissors, ArrowUpRightSquare, CopyPlus, ArrowRight, Eraser, Palette } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { HowItWorks } from '@/components/HowItWorks';
 import { FeaturesHighlight } from '@/components/FeaturesHighlight';
@@ -19,28 +19,28 @@ const tools = [
     name: "AI Background Remover",
     path: "/clearcut",
     description: "Instantly remove the background from any image with one click.",
-    icon: <Scissors className="h-8 w-8" />,
+    icon: <Scissors />,
     status: 'live',
   },
   {
     name: "Batch Background Removal",
     path: "/batch-remover",
     description: "Process dozens of images at once to save time.",
-    icon: <CopyPlus className="h-8 w-8" />,
+    icon: <CopyPlus />,
     status: 'live',
   },
   {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution by 2x or 4x without losing quality.",
-    icon: <ArrowUpRightSquare className="h-8 w-8" />,
+    icon: <ArrowUpRightSquare />,
     status: 'coming soon',
   },
   {
     name: "AI Object Remover",
     path: "/object-remover",
     description: "Erase unwanted objects, people, or text from your photos.",
-    icon: <Eraser className="h-8 w-8" />,
+    icon: <Eraser />,
     status: 'coming soon',
   },
 ];
@@ -50,35 +50,31 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
 
   const cardContent = (
     <Card className={cn(
-      "text-center h-full flex flex-col transition-all duration-300 group",
-      "bg-card/80 backdrop-blur-sm",
-      isLive 
-        ? "border-primary shadow-lg -translate-y-2 hover:border-border hover:shadow-none hover:translate-y-0 cursor-pointer" 
-        : "opacity-70"
+      "h-full flex flex-col transition-all duration-300 group",
+      "bg-card/80 backdrop-blur-sm border-border/50",
+      isLive ? "hover:border-primary cursor-pointer" : "opacity-60"
     )}>
-      <CardHeader className="items-center">
+      <CardHeader>
         <div className={cn(
-          "w-16 h-16 flex items-center justify-center rounded-full mb-4 transition-all duration-300",
-          isLive 
-            ? "scale-110 bg-primary text-primary-foreground group-hover:scale-100 group-hover:bg-primary/10 group-hover:text-primary"
-            : "bg-primary/10 text-primary"
+          "w-12 h-12 flex items-center justify-center rounded-full",
+          isLive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary/60"
         )}>
-          {tool.icon}
+          {React.cloneElement(tool.icon, { className: "h-6 w-6" })}
         </div>
-        <CardTitle className="text-xl">{tool.name}</CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-between">
+      <CardContent className="flex flex-col flex-grow">
+        <CardTitle className="text-xl mb-2">{tool.name}</CardTitle>
         <CardDescription>{tool.description}</CardDescription>
+      </CardContent>
+      <CardFooter>
         {isLive ? (
-          <div className="mt-6 flex items-center justify-center text-sm font-semibold text-primary">
-            Use Tool <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:-translate-x-1" />
+          <div className="flex items-center text-sm font-semibold text-primary">
+            Use Tool <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
           </div>
         ) : (
-          <div className="mt-6">
-            <Badge variant="secondary">Coming Soon</Badge>
-          </div>
+          <Badge variant="secondary">Coming Soon</Badge>
         )}
-      </CardContent>
+      </CardFooter>
     </Card>
   );
 

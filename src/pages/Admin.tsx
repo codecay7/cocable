@@ -11,7 +11,7 @@ import { RecentUsersTable } from '@/components/admin/RecentUsersTable';
 const ADMIN_EMAIL = 'kumardiwakar497@gmail.com';
 
 const fetchAdminData = async () => {
-    const { data, error } = await supabase.functions.invoke('get-admin-dashboard-data');
+    const { data, error } = await supabase.rpc('get_admin_dashboard_stats');
     if (error) throw new Error(error.message);
     return data;
 };

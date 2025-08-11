@@ -50,26 +50,30 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
 
   const cardContent = (
     <Card className={cn(
-      "h-full flex flex-col transition-all duration-300 group",
-      "bg-card/80 backdrop-blur-sm border-border/50",
-      isLive ? "hover:border-primary cursor-pointer" : "opacity-60"
+      "text-center h-full flex flex-col transition-all duration-300 group",
+      "bg-card/80 backdrop-blur-sm",
+      isLive 
+        ? "border-primary shadow-lg -translate-y-2 hover:border-border hover:shadow-none hover:translate-y-0 cursor-pointer" 
+        : "opacity-70"
     )}>
-      <CardHeader>
+      <CardHeader className="items-center">
         <div className={cn(
-          "w-12 h-12 flex items-center justify-center rounded-full",
-          isLive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary/60"
+          "w-16 h-16 flex items-center justify-center rounded-full mb-4 transition-all duration-300",
+          isLive 
+            ? "scale-110 bg-primary text-primary-foreground group-hover:scale-100 group-hover:bg-primary/10 group-hover:text-primary"
+            : "bg-primary/10 text-primary"
         )}>
-          {React.cloneElement(tool.icon, { className: "h-6 w-6" })}
+          {React.cloneElement(tool.icon, { className: "h-8 w-8" })}
         </div>
+        <CardTitle className="text-xl">{tool.name}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col flex-grow">
-        <CardTitle className="text-xl mb-2">{tool.name}</CardTitle>
+      <CardContent className="flex-grow">
         <CardDescription>{tool.description}</CardDescription>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="justify-center pt-4">
         {isLive ? (
           <div className="flex items-center text-sm font-semibold text-primary">
-            Use Tool <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+            Use Tool <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:-translate-x-1" />
           </div>
         ) : (
           <Badge variant="secondary">Coming Soon</Badge>

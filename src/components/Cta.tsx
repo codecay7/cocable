@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 
 export const Cta = () => {
   return (
-    <section className="bg-muted/40">
+    <section className="bg-blur">
       <div className="container mx-auto py-16 md:py-24 text-center">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Ready to Elevate Your Images?</h2>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">

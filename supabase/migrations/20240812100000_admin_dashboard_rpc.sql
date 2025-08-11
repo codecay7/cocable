@@ -1,7 +1,8 @@
-create or replace function get_admin_dashboard_stats()
+create or replace function public.get_admin_dashboard_stats()
 returns jsonb
 language plpgsql
 security definer
+set search_path to 'public'
 as $$
 declare
   result jsonb;
@@ -20,34 +21,23 @@ begin
       ) u
     ),
     'featureUsage', (
-      with all_features as (
-        select feature_name from free_usage_log
-        union
-        select feature_name from premium_usage_log
+      with free_counts as (
+        select feature_name, count(*) as count
+        from free_usage_log
+        group by feature_name
       ),
-      feature_counts as (
-        select
-          f.feature_name,
-          coalesce(free.count, 0) as free_count,
-          coalesce(premium.count, 0) as premium_count
-        from all_features f
-        left join (
-          select feature_name, count(*) as count
-          from free_usage_log
-          group by feature_name
-        ) free on f.feature_name = free.feature_name
-        left join (
-          select feature_name, count(*) as count
-          from premium_usage_log
-          group by feature_name
-        ) premium on f.feature_name = premium.feature_name
+      premium_counts as (
+        select feature_name, count(*) as count
+        from premium_usage_log
+        group by feature_name
       )
       select coalesce(jsonb_agg(jsonb_build_object(
-        'name', feature_name,
-        'free', free_count,
-        'premium', premium_count
+        'name', coalesce(f.feature_name, p.feature_name),
+        'free', coalesce(f.count, 0),
+        'premium', coalesce(p.count, 0)
       )), '[]'::jsonb)
-      from feature_counts
+      from free_counts f
+      full outer join premium_counts p on f.feature_name = p.feature_name
     )
   ) into result;
 

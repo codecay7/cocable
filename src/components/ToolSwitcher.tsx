@@ -14,6 +14,13 @@ const switcherTools = [
     status: 'live',
   },
   {
+    name: "Batch Background Remover",
+    path: "/batch-remover",
+    description: "Process dozens of images at once.",
+    icon: <CopyPlus className="h-6 w-6" />,
+    status: 'live',
+  },
+  {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution without losing quality.",
@@ -26,13 +33,6 @@ const switcherTools = [
     description: "Erase unwanted objects or people from photos.",
     icon: <Eraser className="h-6 w-6" />,
     status: 'coming soon',
-  },
-  {
-    name: "Batch Background Remover",
-    path: "/batch-remover",
-    description: "Process dozens of images at once.",
-    icon: <CopyPlus className="h-6 w-6" />,
-    status: 'live',
   },
 ];
 

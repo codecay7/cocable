@@ -24,6 +24,13 @@ const tools = [
     status: 'live',
   },
   {
+    name: "Batch Remover",
+    path: "/batch-remover",
+    description: "Process dozens of images at once.",
+    icon: <CopyPlus className="h-5 w-5" />,
+    status: 'live',
+  },
+  {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution without losing quality.",
@@ -36,13 +43,6 @@ const tools = [
     description: "Erase unwanted objects or people from photos.",
     icon: <Eraser className="h-5 w-5" />,
     status: 'coming soon',
-  },
-  {
-    name: "Batch Remover",
-    path: "/batch-remover",
-    description: "Process dozens of images at once.",
-    icon: <CopyPlus className="h-5 w-5" />,
-    status: 'live',
   },
 ];
 

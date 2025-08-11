@@ -21,13 +21,6 @@ const switcherTools = [
     status: 'live',
   },
   {
-    name: "AI Image Colorizer",
-    path: "/colorizer",
-    description: "Bring your black and white photos to life.",
-    icon: <Palette className="h-6 w-6" />,
-    status: 'live',
-  },
-  {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution without losing quality.",

@@ -30,13 +30,6 @@ const tools = [
     status: 'live',
   },
   {
-    name: "AI Image Colorizer",
-    path: "/colorizer",
-    description: "Bring your black and white photos to life with realistic colors.",
-    icon: <Palette />,
-    status: 'live',
-  },
-  {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution by 2x or 4x without losing quality.",

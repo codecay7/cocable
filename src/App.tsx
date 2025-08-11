@@ -9,7 +9,6 @@ import ClearCut from "./pages/ClearCut";
 import Upscaler from "./pages/Upscaler";
 import BatchRemover from "./pages/BatchRemover";
 import ObjectRemover from "./pages/ObjectRemover";
-import Colorizer from "./pages/Colorizer";
 import { Layout } from "./components/Layout";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
@@ -44,7 +43,6 @@ const App = () => (
                 <Route path="/upscaler" element={<Upscaler />} />
                 <Route path="/batch-remover" element={<BatchRemover />} />
                 <Route path="/object-remover" element={<ObjectRemover />} />
-                <Route path="/colorizer" element={<Colorizer />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/creations" element={<Creations />} />
                 <Route path="/privacy" element={<Privacy />} />

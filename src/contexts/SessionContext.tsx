@@ -22,6 +22,17 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     setLoading(true);
 
+    // Fetch initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(err => {
+      console.error("Error getting session:", err);
+      setLoading(false);
+    });
+
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);

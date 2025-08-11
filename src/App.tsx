@@ -20,6 +20,7 @@ import Terms from "./pages/Terms";
 import Refunds from "./pages/Refunds";
 import Contact from "./pages/Contact";
 import Creations from "./pages/Creations";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/refunds" element={<Refunds />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/admin" element={<Admin />} />
               </Route>
               <Route path="/login" element={<Login />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -53,14 +53,14 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
       "text-center h-full flex flex-col transition-all duration-300 group",
       "bg-card/80 backdrop-blur-sm",
       isLive 
-        ? "border-primary shadow-lg -translate-y-2 hover:border-border hover:shadow-none hover:translate-y-0 cursor-pointer" 
+        ? "hover:border-primary hover:shadow-lg hover:-translate-y-2 cursor-pointer" 
         : "opacity-70"
     )}>
       <CardHeader className="items-center">
         <div className={cn(
           "w-16 h-16 flex items-center justify-center rounded-full mb-4 transition-all duration-300",
           isLive 
-            ? "scale-110 bg-primary text-primary-foreground group-hover:scale-100 group-hover:bg-primary/10 group-hover:text-primary"
+            ? "bg-primary/10 text-primary group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground"
             : "bg-primary/10 text-primary"
         )}>
           {React.cloneElement(tool.icon, { className: "h-8 w-8" })}
@@ -73,7 +73,7 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
       <CardFooter className="justify-center pt-4">
         {isLive ? (
           <div className="flex items-center text-sm font-semibold text-primary">
-            Use Tool <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:-translate-x-1" />
+            Use Tool <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
           </div>
         ) : (
           <Badge variant="secondary">Coming Soon</Badge>

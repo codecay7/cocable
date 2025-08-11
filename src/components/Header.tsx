@@ -13,6 +13,7 @@ import { useSession } from '@/hooks/useSession';
 import { UserNav } from './UserNav';
 import { Skeleton } from './ui/skeleton';
 import { gsap } from 'gsap';
+import { Badge } from './ui/badge';
 
 const tools = [
   {
@@ -20,30 +21,35 @@ const tools = [
     path: "/clearcut",
     description: "Instantly remove the background from any image.",
     icon: <Scissors className="h-5 w-5" />,
+    status: 'live',
   },
   {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution without losing quality.",
     icon: <ArrowUpRightSquare className="h-5 w-5" />,
+    status: 'coming soon',
   },
   {
     name: "AI Object Remover",
     path: "/object-remover",
     description: "Erase unwanted objects or people from photos.",
     icon: <Eraser className="h-5 w-5" />,
+    status: 'coming soon',
   },
   {
     name: "AI Photo Colorizer",
     path: "/colorizer",
     description: "Bring black and white photos to life.",
     icon: <Palette className="h-5 w-5" />,
+    status: 'coming soon',
   },
   {
     name: "Batch Remover",
     path: "/batch-remover",
     description: "Process dozens of images at once.",
     icon: <CopyPlus className="h-5 w-5" />,
+    status: 'live',
   },
 ];
 
@@ -68,6 +74,42 @@ export const Header = () => {
     }
   }, [isSheetOpen]);
 
+  const renderToolLink = (tool: typeof tools[0], isMobile = false) => {
+    const isLive = tool.status === 'live';
+
+    if (isLive) {
+      return (
+        <NavLink
+          key={tool.name}
+          to={tool.path}
+          onClick={() => isMobile && setIsSheetOpen(false)}
+          className={({ isActive, isPending }) => cn(
+            isMobile ? "mobile-nav-link flex items-center space-x-4 p-3 rounded-md text-base font-medium transition-colors" : "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+            isActive && tool.path === window.location.pathname ? "bg-accent text-accent-foreground" : isMobile ? "hover:bg-accent/50" : "text-muted-foreground hover:bg-accent/50",
+            isPending && "opacity-50"
+          )}
+        >
+          {tool.icon}
+          <span>{tool.name}</span>
+        </NavLink>
+      );
+    }
+
+    return (
+      <div
+        key={tool.name}
+        className={cn(
+          isMobile ? "mobile-nav-link flex items-center space-x-4 p-3 rounded-md text-base font-medium" : "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium",
+          "text-muted-foreground opacity-50 cursor-not-allowed"
+        )}
+      >
+        {tool.icon}
+        <span>{tool.name}</span>
+        <Badge variant="secondary" className="ml-2">Soon</Badge>
+      </div>
+    );
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/30 backdrop-blur-lg">
       <div className="container flex h-14 items-center">
@@ -78,20 +120,7 @@ export const Header = () => {
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
-          {tools.map((tool) => (
-            <NavLink
-              key={tool.name}
-              to={tool.path}
-              className={({ isActive, isPending }) => cn(
-                "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                isActive && tool.path === window.location.pathname ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent/50",
-                isPending && "opacity-50"
-              )}
-            >
-              {tool.icon}
-              <span>{tool.name}</span>
-            </NavLink>
-          ))}
+          {tools.map((tool) => renderToolLink(tool))}
         </nav>
 
         <div className="ml-auto flex items-center space-x-2">
@@ -118,20 +147,7 @@ export const Header = () => {
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[350px] bg-background/90 backdrop-blur-lg">
                 <nav className="flex flex-col space-y-2 mt-8">
-                  {tools.map((tool) => (
-                    <NavLink
-                      key={tool.path}
-                      to={tool.path}
-                      onClick={() => setIsSheetOpen(false)}
-                      className={({ isActive }) => cn(
-                        "mobile-nav-link flex items-center space-x-4 p-3 rounded-md text-base font-medium transition-colors",
-                        isActive && tool.path === window.location.pathname ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-                      )}
-                    >
-                      {tool.icon}
-                      <span>{tool.name}</span>
-                    </NavLink>
-                  ))}
+                  {tools.map((tool) => renderToolLink(tool, true))}
                    {!session && (
                     <Button asChild className="w-full mt-6 mobile-nav-link">
                       <Link to="/login" onClick={() => setIsSheetOpen(false)}>Login or Sign Up</Link>

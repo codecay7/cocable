@@ -10,6 +10,7 @@ import { FeaturesHighlight } from '@/components/FeaturesHighlight';
 import { Faq } from '@/components/Faq';
 import { Cta } from '@/components/Cta';
 import { PromoBanner } from '@/components/PromoBanner';
+import { Badge } from '@/components/ui/badge';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -26,21 +27,21 @@ const tools = [
     path: "/upscaler",
     description: "Increase image resolution by 2x or 4x without losing quality.",
     icon: <ArrowUpRightSquare className="h-8 w-8" />,
-    status: 'live',
+    status: 'coming soon',
   },
   {
     name: "AI Object Remover",
     path: "/object-remover",
     description: "Erase unwanted objects, people, or text from your photos.",
     icon: <Eraser className="h-8 w-8" />,
-    status: 'live',
+    status: 'coming soon',
   },
   {
     name: "AI Photo Colorizer",
     path: "/colorizer",
     description: "Bring old black and white photos to life with realistic color.",
     icon: <Palette className="h-8 w-8" />,
-    status: 'live',
+    status: 'coming soon',
   },
   {
     name: "Batch Background Removal",
@@ -68,9 +69,13 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-between">
         <CardDescription>{tool.description}</CardDescription>
-        {isLive && (
+        {isLive ? (
           <div className="mt-6 flex items-center justify-center text-sm font-semibold text-primary">
             Use Tool <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+          </div>
+        ) : (
+          <div className="mt-6">
+            <Badge variant="secondary">Coming Soon</Badge>
           </div>
         )}
       </CardContent>

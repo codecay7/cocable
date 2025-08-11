@@ -30,6 +30,13 @@ const tools = [
     status: 'live',
   },
   {
+    name: "AI Image Colorizer",
+    path: "/colorizer",
+    description: "Bring your black and white photos to life with realistic colors.",
+    icon: <Palette />,
+    status: 'live',
+  },
+  {
     name: "AI Image Upscaler",
     path: "/upscaler",
     description: "Increase image resolution by 2x or 4x without losing quality.",
@@ -112,7 +119,7 @@ const Index = () => {
               Instantly remove backgrounds, upscale images, and erase objects with our suite of free AI tools.
             </p>
           </div>
-          <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tools.map((tool) => (
               <ToolCard key={tool.name} tool={tool} />
             ))}

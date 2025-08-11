@@ -42,35 +42,31 @@ export const ToolSwitcher = () => {
 
   const otherTools = switcherTools.filter(tool => tool.path !== currentPath);
 
-  if (otherTools.length === 0) {
-    return null;
-  }
+  if (otherTools.length === 0) return null;
 
   return (
-    <div className= "container mx-auto py-12 md:py-16 border-t mt-8" >
-    <div className="text-center mb-8" >
-      <h2 className="text-3xl font-bold tracking-tight" > Explore Other Tools < /h2>
-        < p className = "mt-2 text-lg text-muted-foreground" >
-          Finished with this tool ? Jump right into another one.
-< /p>
-            < /div>
-            < div className = "w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6" >
-            {
-              otherTools.map(tool => (
-                <Link to= { tool.path } key = { tool.path } className = "block h-full" >
-                <Card className="h-full flex flex-col text-left p-4 transition-all duration-300 group hover:border-primary hover:shadow-lg hover:-translate-y-1" >
-              <CardHeader className="flex-row items-center gap-4 p-2" >
-              <div className="bg-primary/10 p-3 rounded-lg text-primary" > { tool.icon } < /div>
-              < CardTitle className = "text-lg" > { tool.name } < /CardTitle>
-              < /CardHeader>
-              < CardContent className = "p-2 pt-0" >
-              <CardDescription>{ tool.description } < /CardDescription>
-              < /CardContent>
-              < /Card>
-              < /Link>
-              ))
-            }
-              < /div>
-              < /div>
+    <div className="container mx-auto py-12 md:py-16 border-t mt-8">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold tracking-tight">Explore Other Tools</h2>
+        <p className="mt-2 text-lg text-muted-foreground">
+          Finished with this tool? Jump right into another one.
+        </p>
+      </div>
+      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+        {otherTools.map(tool => (
+          <Link to={tool.path} key={tool.path} className="block h-full">
+            <Card className="h-full flex flex-col text-left p-4 transition-all duration-300 group hover:border-primary hover:shadow-lg hover:-translate-y-1">
+              <CardHeader className="flex-row items-center gap-4 p-2">
+                <div className="bg-primary/10 p-3 rounded-lg text-primary">{tool.icon}</div>
+                <CardTitle className="text-lg">{tool.name}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 pt-0">
+                <CardDescription>{tool.description}</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 };

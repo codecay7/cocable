@@ -11,7 +11,6 @@ import { Faq } from '@/components/Faq';
 import { Cta } from '@/components/Cta';
 import { PromoBanner } from '@/components/PromoBanner';
 import { Badge } from '@/components/ui/badge';
-import Hero3DBackground from '@/components/Hero3DBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -52,7 +51,6 @@ const ToolCard = ({ tool }: { tool: typeof tools[0] }) => {
   const cardContent = (
     <Card className={cn(
       "text-center h-full flex flex-col transition-all duration-300 group",
-      "bg-card/80 backdrop-blur-sm",
       isLive 
         ? "hover:border-primary hover:shadow-lg hover:-translate-y-2 cursor-pointer" 
         : "opacity-70"
@@ -104,9 +102,8 @@ const Index = () => {
 
   return (
     <div ref={containerRef}>
-      <section className="relative overflow-hidden">
-        <Hero3DBackground />
-        <div className="relative z-10 container flex flex-col items-center justify-center text-center py-16 md:py-24">
+      <section>
+        <div className="container flex flex-col items-center justify-center text-center py-16 md:py-24">
           <div className="max-w-4xl mb-12">
             <h1 className="anim-title text-5xl md:text-7xl font-extrabold tracking-tight">
               AI-Powered Image Editing, <span className="text-gradient bg-gradient-to-r from-primary to-purple-400">Simplified.</span>

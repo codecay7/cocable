@@ -22,6 +22,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExampleImages } from '@/components/ExampleImages';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { saveCreation } from '@/utils/creations';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+const fetchCredits = async (userId: string): Promise<number> => {
+  const { data, error } = await supabase
+    .from('user_credits')
+    .select('credits')
+    .eq('user_id', userId)
+    .single();
+  
+  if (error && error.code === 'PGRST116') {
+    return 0;
+  }
+  if (error) throw new Error(error.message);
+  return data.credits;
+};
 
 const ClearCut = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
@@ -34,29 +49,21 @@ const ClearCut = () => {
   const [quality, setQuality] = useState<'general' | 'landscape'>('general');
   const [isRefining, setIsRefining] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
-  const [credits, setCredits] = useState<number | null>(null);
   const cardRef = useRef(null);
   const { session, user } = useSession();
   const { openModal } = usePurchaseModal();
+  const queryClient = useQueryClient();
+
+  const { data: credits } = useQuery({
+    queryKey: ['credits', user?.id],
+    queryFn: () => fetchCredits(user!.id),
+    enabled: !!user,
+  });
 
   useEffect(() => {
     if (navigator.share) setIsShareSupported(true);
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      const fetchCredits = async () => {
-        const { data, error } = await supabase
-          .from('user_credits')
-          .select('credits')
-          .eq('user_id', user.id)
-          .single();
-        if (!error && data) setCredits(data.credits);
-      };
-      fetchCredits();
-    }
-  }, [user]);
 
   const handleFileSelect = (file: File) => {
     setOriginalImage(file);
@@ -108,7 +115,7 @@ const ClearCut = () => {
 
       if (data.status === 'paid_use_logged') {
         toast.success("1 credit used.");
-        setCredits(c => (c !== null ? c - 1 : null));
+        await queryClient.invalidateQueries({ queryKey: ['credits', user.id] });
       } else if (data.status === 'free_use_logged') {
         toast.info(`Free use! You have ${data.remaining_free} free uses left today.`);
       }

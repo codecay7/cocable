@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { saveCreation } from '@/utils/creations';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export interface QueueFile {
   id: string;
@@ -27,21 +28,40 @@ export interface QueueFile {
 
 const MAX_WORKERS = navigator.hardwareConcurrency || 4;
 
+const fetchCredits = async (userId: string): Promise<number> => {
+  const { data, error } = await supabase
+    .from('user_credits')
+    .select('credits')
+    .eq('user_id', userId)
+    .single();
+  
+  if (error && error.code === 'PGRST116') {
+    return 0;
+  }
+  if (error) throw new Error(error.message);
+  return data.credits;
+};
+
 const BatchRemover = () => {
   const [queue, setQueue] = useState<QueueFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [credits, setCredits] = useState<number | null>(null);
   const [quality, setQuality] = useState<'general' | 'landscape'>('general');
   const cardRef = useRef(null);
   const workersRef = useRef<Worker[]>([]);
   const fileQueueRef = useRef<QueueFile[]>([]);
   const { session, user } = useSession();
   const { openModal } = usePurchaseModal();
+  const queryClient = useQueryClient();
+
+  const { data: credits } = useQuery({
+    queryKey: ['credits', user?.id],
+    queryFn: () => fetchCredits(user!.id),
+    enabled: !!user,
+  });
 
   useEffect(() => {
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
     
-    // Initialize workers
     workersRef.current = Array.from({ length: MAX_WORKERS }, () => {
       const worker = new Worker(new URL('../workers/segmentation.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e) => handleWorkerMessage(e.data);
@@ -52,20 +72,6 @@ const BatchRemover = () => {
       workersRef.current.forEach(worker => worker.terminate());
     };
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      const fetchCredits = async () => {
-        const { data, error } = await supabase
-          .from('user_credits')
-          .select('credits')
-          .eq('user_id', user.id)
-          .single();
-        if (!error && data) setCredits(data.credits);
-      };
-      fetchCredits();
-    }
-  }, [user]);
 
   const handleWorkerMessage = (data: any) => {
     const { type, id, progress, result, error } = data;
@@ -106,7 +112,6 @@ const BatchRemover = () => {
             handleWorkerMessage(e.data);
           };
         } else {
-          // This case should ideally not happen if logic is correct
           fileQueueRef.current.unshift(fileToProcess);
         }
       }
@@ -162,7 +167,7 @@ const BatchRemover = () => {
         return;
       }
 
-      setCredits(c => (c !== null ? c - creditsNeeded : null));
+      await queryClient.invalidateQueries({ queryKey: ['credits', user?.id] });
       toast.success(`${creditsNeeded} credit(s) used for processing ${filesToProcess.length} images.`);
 
       fileQueueRef.current = [...filesToProcess];

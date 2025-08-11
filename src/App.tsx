@@ -20,7 +20,6 @@ import Terms from "./pages/Terms";
 import Refunds from "./pages/Refunds";
 import Contact from "./pages/Contact";
 import Creations from "./pages/Creations";
-import Colorizer from "./pages/Colorizer";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +42,6 @@ const App = () => (
                 <Route path="/upscaler" element={<Upscaler />} />
                 <Route path="/batch-remover" element={<BatchRemover />} />
                 <Route path="/object-remover" element={<ObjectRemover />} />
-                <Route path="/colorizer" element={<Colorizer />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/creations" element={<Creations />} />
                 <Route path="/privacy" element={<Privacy />} />

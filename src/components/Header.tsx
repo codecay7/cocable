@@ -38,13 +38,6 @@ const tools = [
     status: 'coming soon',
   },
   {
-    name: "AI Photo Colorizer",
-    path: "/colorizer",
-    description: "Bring black and white photos to life.",
-    icon: <Palette className="h-5 w-5" />,
-    status: 'coming soon',
-  },
-  {
     name: "Batch Remover",
     path: "/batch-remover",
     description: "Process dozens of images at once.",

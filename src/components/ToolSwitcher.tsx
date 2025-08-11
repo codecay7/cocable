@@ -28,13 +28,6 @@ const switcherTools = [
     status: 'coming soon',
   },
   {
-    name: "AI Photo Colorizer",
-    path: "/colorizer",
-    description: "Bring old black and white photos to life.",
-    icon: <Palette className="h-6 w-6" />,
-    status: 'coming soon',
-  },
-  {
     name: "Batch Background Remover",
     path: "/batch-remover",
     description: "Process dozens of images at once.",

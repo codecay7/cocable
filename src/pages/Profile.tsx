@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showError, showSuccess } from '@/utils/toast';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Loader2, CreditCard, AlertTriangle } from 'lucide-react';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RedeemCoupon } from '@/components/RedeemCoupon';
@@ -30,14 +30,8 @@ const fetchProfile = async (userId: string): Promise<ProfileData> => {
     .eq('id', userId)
     .single();
 
-  // If profile doesn't exist yet (e.g., right after signup), return a default structure
   if (error && error.code === 'PGRST116') {
-    return {
-      id: userId,
-      first_name: null,
-      last_name: null,
-      avatar_url: null,
-    };
+    return { id: userId, first_name: null, last_name: null, avatar_url: null };
   }
   
   if (error) throw new Error(error.message);
@@ -68,7 +62,7 @@ const Profile = () => {
 
   const isRazorpayConfigured = !!import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
+  const { data: profile, isLoading: isProfileLoading, isError: isProfileError } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user!.id),
     enabled: !!user,
@@ -80,7 +74,7 @@ const Profile = () => {
     }
   }, [profile]);
 
-  const { data: credits, isLoading: isCreditsLoading } = useQuery({
+  const { data: credits, isLoading: isCreditsLoading, isError: isCreditsError } = useQuery({
     queryKey: ['credits', user?.id],
     queryFn: () => fetchCredits(user!.id),
     enabled: !!user,
@@ -141,6 +135,54 @@ const Profile = () => {
   }
 
   const isLoading = isProfileLoading || isCreditsLoading;
+  const isError = isProfileError || isCreditsError;
+
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+    if (isError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-40 text-destructive">
+          <AlertTriangle className="w-8 h-8 mb-2" />
+          <p>Could not load profile data.</p>
+          <p className="text-sm text-muted-foreground">Please try refreshing the page.</p>
+        </div>
+      );
+    }
+    return (
+      <form onSubmit={handleUpdateProfile} className="space-y-8">
+        <AvatarUploader
+          src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url || undefined}
+          fallback={formData?.first_name?.[0] || user?.email?.[0] || 'U'}
+          onFileSelect={setNewAvatarFile}
+        />
+        <Separator />
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name</Label>
+            <Input id="firstName" value={formData?.first_name || ''} onChange={(e) => setFormData(p => ({...p, first_name: e.target.value}))} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input id="lastName" value={formData?.last_name || ''} onChange={(e) => setFormData(p => ({...p, last_name: e.target.value}))} />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" value={user?.email || ''} disabled />
+          <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
+        </div>
+        <Separator />
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isUpdating}>
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    );
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -152,45 +194,7 @@ const Profile = () => {
             <CardDescription>Manage your account details and preferences.</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
-            ) : (
-              <form onSubmit={handleUpdateProfile} className="space-y-8">
-                <AvatarUploader
-                  src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url || undefined}
-                  fallback={formData?.first_name?.[0] || user?.email?.[0] || 'U'}
-                  onFileSelect={setNewAvatarFile}
-                />
-                
-                <Separator />
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" value={formData?.first_name || ''} onChange={(e) => setFormData(p => ({...p, first_name: e.target.value}))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" value={formData?.last_name || ''} onChange={(e) => setFormData(p => ({...p, last_name: e.target.value}))} />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" value={user?.email || ''} disabled />
-                  <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
-                </div>
-
-                <Separator />
-
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={isUpdating}>
-                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                  </Button>
-                </div>
-              </form>
-            )}
+            {renderContent()}
           </CardContent>
         </Card>
 

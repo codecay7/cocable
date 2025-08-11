@@ -40,23 +40,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
       // When a user signs in, ensure they have a profile record.
       if (_event === 'SIGNED_IN' && session?.user) {
-        const user = session.user;
-        
-        const { error: profileError } = await supabase
+        const { error } = await supabase
           .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .single();
-
-        // "PGRST116" is the code for "single() row not found", meaning no profile exists.
-        if (profileError && profileError.code === 'PGRST116') {
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({ id: user.id });
-          
-          if (insertError) {
-            console.error('Failed to create user profile:', insertError.message);
-          }
+          .upsert({ id: session.user.id });
+        
+        if (error) {
+          console.error('Failed to create/upsert user profile:', error.message);
         }
       }
     });

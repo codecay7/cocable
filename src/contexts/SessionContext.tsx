@@ -20,23 +20,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
-      } catch (e) {
-        console.error("Failed to get session:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getSession();
+    setLoading(true);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
 
       // When a user signs in, ensure they have a profile record.
       if (_event === 'SIGNED_IN' && session?.user) {

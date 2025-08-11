@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Gift } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,25 +15,21 @@ export const PromoBanner = () => {
   };
 
   return (
-    <section>
-      <div className="container mx-auto py-8">
-        <Card className="bg-gradient-to-r from-primary to-blue-500 text-primary-foreground shadow-lg">
-          <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Gift className="w-10 h-10" />
-              <div>
-                <h3 className="text-xl font-bold">New User Offer!</h3>
-                <p className="text-sm opacity-90">Get 20 free credits to try out all our features.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-background/20 p-2 rounded-lg">
-              <span className="font-mono text-lg font-bold tracking-widest">{couponCode}</span>
-              <Button variant="ghost" size="icon" onClick={handleCopy} className="hover:bg-background/30">
-                <Copy className="w-5 h-5" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+    <section className="bg-gradient-to-r from-primary to-blue-500 text-primary-foreground shadow-lg">
+      <div className="container mx-auto p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Gift className="w-10 h-10" />
+          <div>
+            <h3 className="text-xl font-bold">New User Offer!</h3>
+            <p className="text-sm opacity-90">Get 20 free credits to try out all our features.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 bg-background/20 p-2 rounded-lg">
+          <span className="font-mono text-lg font-bold tracking-widest">{couponCode}</span>
+          <Button variant="ghost" size="icon" onClick={handleCopy} className="hover:bg-background/30">
+            <Copy className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
     </section>
   );

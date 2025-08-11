@@ -27,38 +27,12 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    // 2. Fetch all data in parallel
-    const [
-      userCountResult,
-      transactionsResult,
-      freeUsageResult,
-      premiumUsageResult,
-      recentUsersResult
-    ] = await Promise.all([
-      supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
-      supabaseAdmin.from('transactions').select('amount_paid, credits_purchased'),
-      supabaseAdmin.from('free_usage_log').select('feature_name'),
-      supabaseAdmin.from('premium_usage_log').select('feature_name'),
-      supabaseAdmin.from('profiles').select('id, created_at, first_name, last_name, avatar_url').order('created_at', { ascending: false }).limit(5)
-    ]);
+    // 2. Call the new RPC function to get all data at once
+    const { data: dashboardData, error: rpcError } = await supabaseAdmin.rpc('get_admin_dashboard_stats');
 
-    // 3. Check for errors in each query
-    if (userCountResult.error) throw userCountResult.error;
-    if (transactionsResult.error) throw transactionsResult.error;
-    if (freeUsageResult.error) throw freeUsageResult.error;
-    if (premiumUsageResult.error) throw premiumUsageResult.error;
-    if (recentUsersResult.error) throw recentUsersResult.error;
-
-    // 4. Combine data into a single response object
-    const dashboardData = {
-      userCount: userCountResult.count,
-      transactions: transactionsResult.data,
-      usageLogs: {
-        free: freeUsageResult.data,
-        premium: premiumUsageResult.data,
-      },
-      recentUsers: recentUsersResult.data,
-    };
+    if (rpcError) {
+      throw rpcError;
+    }
 
     return new Response(JSON.stringify(dashboardData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,

@@ -30,25 +30,23 @@ const Admin = () => {
 
     // Process data safely
     const userCount = adminData?.userCount ?? 0;
-    const transactions = adminData?.transactions ?? [];
-    const usageLogs = adminData?.usageLogs ?? { free: [], premium: [] };
+    const totalRevenue = (adminData?.totalRevenue ?? 0) / 100;
+    const totalCreditsSold = adminData?.totalCreditsSold ?? 0;
     const recentUsers = adminData?.recentUsers ?? [];
-
-    const totalRevenue = transactions.reduce((acc, tx) => acc + tx.amount_paid, 0) / 100;
-    const totalCreditsSold = transactions.reduce((acc, tx) => acc + tx.credits_purchased, 0);
-    const totalFeaturesUsed = (usageLogs.free.length) + (usageLogs.premium.length);
-
+    
     const chartData = React.useMemo(() => {
-        if (!usageLogs) return [];
-        const freeCounts = usageLogs.free.reduce((acc, i) => ({ ...acc, [i.feature_name]: (acc[i.feature_name] || 0) + 1 }), {} as Record<string, number>);
-        const premiumCounts = usageLogs.premium.reduce((acc, i) => ({ ...acc, [i.feature_name]: (acc[i.feature_name] || 0) + 1 }), {} as Record<string, number>);
-        const features = [...new Set([...Object.keys(freeCounts), ...Object.keys(premiumCounts)])];
-        return features.map(f => ({
-            name: f.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase()),
-            free: freeCounts[f] || 0,
-            premium: premiumCounts[f] || 0,
+        if (!adminData?.featureUsage) return [];
+        return adminData.featureUsage.map((f: any) => ({
+            name: f.name.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, (l: string) => l.toUpperCase()),
+            free: f.free,
+            premium: f.premium,
         }));
-    }, [usageLogs]);
+    }, [adminData?.featureUsage]);
+
+    const totalFeaturesUsed = React.useMemo(() => {
+        if (!adminData?.featureUsage) return 0;
+        return adminData.featureUsage.reduce((acc: number, f: any) => acc + f.free + f.premium, 0);
+    }, [adminData?.featureUsage]);
 
     if (sessionLoading) {
         return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;

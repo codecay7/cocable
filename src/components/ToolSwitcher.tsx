@@ -51,8 +51,8 @@ export const ToolSwitcher = () => {
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold tracking-tight">Explore Other Tools</h2>
         <p className="mt-2 text-lg text-muted-foreground">
-          Finished with this tool? Jump right into another one.
-        p>
+  Finished with this tool? Jump right into another one.
+</p>
       </div>
       <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         {otherTools.map(tool => (

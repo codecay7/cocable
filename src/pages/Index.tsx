@@ -11,7 +11,6 @@ import { Faq } from '@/components/Faq';
 import { Cta } from '@/components/Cta';
 import { PromoBanner } from '@/components/PromoBanner';
 import { Badge } from '@/components/ui/badge';
-import Hero3DBackground from '@/components/Hero3DBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -104,24 +103,21 @@ const Index = () => {
 
   return (
     <div ref={containerRef}>
-      <section className="relative overflow-hidden">
-        <Hero3DBackground />
-        <div className="relative z-10 container flex flex-col items-center justify-center text-center py-16 md:py-24">
-          <div className="max-w-4xl mb-12">
-            <h1 className="anim-title text-5xl md:text-7xl font-extrabold tracking-tight">
-              AI-Powered Image Editing, <span className="text-gradient bg-gradient-to-r from-primary to-purple-400">Simplified.</span>
-            </h1>
-            <p className="anim-p mt-6 text-lg md:text-xl text-muted-foreground">
-              Instantly remove backgrounds, upscale images, and erase objects with our suite of free AI tools.
-            </p>
-          </div>
-          <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tools.map((tool) => (
-              <ToolCard key={tool.name} tool={tool} />
-            ))}
-          </div>
+      <div className="container flex flex-col items-center justify-center text-center py-16 md:py-24">
+        <div className="max-w-4xl mb-12">
+          <h1 className="anim-title text-5xl md:text-7xl font-extrabold tracking-tight">
+            AI-Powered Image Editing, <span className="text-gradient bg-gradient-to-r from-primary to-purple-400">Simplified.</span>
+          </h1>
+          <p className="anim-p mt-6 text-lg md:text-xl text-muted-foreground">
+            Instantly remove backgrounds, upscale images, and erase objects with our suite of free AI tools.
+          </p>
         </div>
-      </section>
+        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {tools.map((tool) => (
+            <ToolCard key={tool.name} tool={tool} />
+          ))}
+        </div>
+      </div>
       
       <PromoBanner />
       <HowItWorks />

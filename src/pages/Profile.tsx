@@ -206,7 +206,7 @@ const Profile = () => {
                   <Badge variant="destructive">
                     Payments Not Configured
                   </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">Please add VITE_RAZORPAY_KEY_ID to your .env file and Rebuild.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Please add VITE_RAZORPAY_KEY_ID to the Secrets panel and Rebuild.</p>
                 </div>
               )}
             </CardContent>

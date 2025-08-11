@@ -16,7 +16,7 @@ export const PromoBanner = () => {
 
   return (
     <section >
-      <div className="bg-gradient-to-r from-primary to-blue-500 text-primary-foreground shadow-lg">
+      <div className="container mx-auto p-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Gift className="w-10 h-10" />
           <div>

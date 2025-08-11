@@ -18,9 +18,9 @@ import { Separator } from '@/components/ui/separator';
 
 interface ProfileData {
   id: string;
-  first_name: string;
-  last_name: string;
-  avatar_url: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
 }
 
 const fetchProfile = async (userId: string): Promise<ProfileData> => {
@@ -29,6 +29,17 @@ const fetchProfile = async (userId: string): Promise<ProfileData> => {
     .select('*')
     .eq('id', userId)
     .single();
+
+  // If profile doesn't exist yet (e.g., right after signup), return a default structure
+  if (error && error.code === 'PGRST116') {
+    return {
+      id: userId,
+      first_name: null,
+      last_name: null,
+      avatar_url: null,
+    };
+  }
+  
   if (error) throw new Error(error.message);
   return data;
 };
@@ -146,7 +157,7 @@ const Profile = () => {
             ) : (
               <form onSubmit={handleUpdateProfile} className="space-y-8">
                 <AvatarUploader
-                  src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url}
+                  src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url || undefined}
                   fallback={formData?.first_name?.[0] || user?.email?.[0] || 'U'}
                   onFileSelect={setNewAvatarFile}
                 />

@@ -16,7 +16,7 @@ export const PromoBanner = () => {
   };
 
   return (
-    <section className="bg-primary/10">
+    <section>
       <div className="container mx-auto py-8">
         <Card className="bg-gradient-to-r from-primary to-blue-500 text-primary-foreground shadow-lg">
           <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-4">

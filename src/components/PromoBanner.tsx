@@ -16,7 +16,7 @@ export const PromoBanner = () => {
 
   return (
     <section >
-      <div className="container mx-auto p-6 flex flex-col md:flex-row items-center justify-between gap-4 bg-blue-500">
+      <div className="container mx-auto p-6 flex flex-col md:flex-row items-center justify-between gap-4 bg-blue-400 rounded-md text-black">
         <div className="flex items-center gap-4">
           <Gift className="w-10 h-10" />
           <div>

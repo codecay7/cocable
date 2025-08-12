@@ -30,20 +30,20 @@ const tools = [
     icon: <CopyPlus className="h-5 w-5" />,
     status: 'live',
   },
-  {
-    name: "AI Image Upscaler",
-    path: "/upscaler",
-    description: "Increase image resolution without losing quality.",
-    icon: <ArrowUpRightSquare className="h-5 w-5" />,
-    status: 'coming soon',
-  },
-  {
-    name: "AI Object Remover",
-    path: "/object-remover",
-    description: "Erase unwanted objects or people from photos.",
-    icon: <Eraser className="h-5 w-5" />,
-    status: 'coming soon',
-  },
+  // {
+  //   name: "AI Image Upscaler",
+  //   path: "/upscaler",
+  //   description: "Increase image resolution without losing quality.",
+  //   icon: <ArrowUpRightSquare className="h-5 w-5" />,
+  //   status: 'coming soon',
+  // },
+  // {
+  //   name: "AI Object Remover",
+  //   path: "/object-remover",
+  //   description: "Erase unwanted objects or people from photos.",
+  //   icon: <Eraser className="h-5 w-5" />,
+  //   status: 'coming soon',
+  // },
 ];
 
 export const Header = () => {

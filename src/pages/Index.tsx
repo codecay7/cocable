@@ -105,7 +105,7 @@ const Index = () => {
       <section>
         <div className="container flex flex-col items-center justify-center text-center py-16 md:py-24">
           <div className="max-w-4xl mt-12 mb-16">
-            <h1 className="anim-title text-3xl md:text-8xl font-extrabold tracking-tight">
+            <h1 className="anim-title text-4xl md:text-8xl font-extrabold tracking-tight">
               AI-Powered Image Editing, <span className="text-gradient bg-gradient-to-r from-primary to-purple-400">Simplified.</span>
             </h1>
             <p className="anim-p mt-6 text-lg md:text-xl text-muted-foreground">

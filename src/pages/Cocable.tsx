@@ -6,7 +6,7 @@ import { Loader2, Share2, Wand2, Eye, Info } from 'lucide-react';
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
 import '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
-import { showError } from '@/utils/toast';
+import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { toast } from 'sonner';
 import { ComparisonSlider } from '@/components/ComparisonSlider';
 import { gsap } from 'gsap';
@@ -23,6 +23,7 @@ import { ExampleImages } from '@/components/ExampleImages';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { saveCreation } from '@/utils/creations';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { resizeImage } from '@/utils/image';
 
 const fetchCredits = async (userId: string): Promise<number> => {
   const { data, error } = await supabase
@@ -65,14 +66,25 @@ const Cocable = () => {
     gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out" });
   }, []);
 
-  const handleFileSelect = (file: File) => {
-    setOriginalImage(file);
-    setProcessedImage(null);
-    setError(null);
-    setBackground('transparent');
-    setIsShadowEnabled(false);
-    setIsRefining(false);
-    setShowCompare(false);
+  const handleFileSelect = async (file: File) => {
+    const toastId = showLoading("Preparing image...");
+    try {
+      // Resize image to a max dimension of 1920px for performance
+      const resizedFile = await resizeImage(file, 1920);
+      
+      setOriginalImage(resizedFile);
+      setProcessedImage(null);
+      setError(null);
+      setBackground('transparent');
+      setIsShadowEnabled(false);
+      setIsRefining(false);
+      setShowCompare(false);
+      dismissToast(toastId);
+    } catch (error) {
+      dismissToast(toastId);
+      showError("Could not process this image file. Please try another one.");
+      console.error("Image resizing failed:", error);
+    }
   };
 
   const handleExampleSelect = async (url: string) => {
@@ -81,7 +93,7 @@ const Cocable = () => {
       const blob = await response.blob();
       const fileName = url.split('/').pop() || 'example.svg';
       const file = new File([blob], fileName, { type: blob.type });
-      handleFileSelect(file);
+      await handleFileSelect(file);
     } catch (error) {
       showError("Could not load the example image.");
       console.error("Failed to fetch example image:", error);

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { Loader2, CreditCard, AlertTriangle } from 'lucide-react';
 import { usePurchaseModal } from '@/contexts/PurchaseModalContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { TransactionHistory } from '@/components/TransactionHistory';
 import { AvatarUploader } from '@/components/AvatarUploader';
 import { Separator } from '@/components/ui/separator';
+import { resizeImage } from '@/utils/image';
 
 interface ProfileData {
   id: string;
@@ -79,6 +80,20 @@ const Profile = () => {
     queryFn: () => fetchCredits(user!.id),
     enabled: !!user,
   });
+
+  const handleAvatarSelect = async (file: File) => {
+    const toastId = showLoading("Preparing avatar...");
+    try {
+      // Resize avatar to 512px for performance and storage optimization
+      const resizedFile = await resizeImage(file, 512);
+      setNewAvatarFile(resizedFile);
+      dismissToast(toastId);
+    } catch (error) {
+      dismissToast(toastId);
+      showError("Could not use this image file. Please try another one.");
+      console.error("Avatar resizing failed:", error);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +170,7 @@ const Profile = () => {
         <AvatarUploader
           src={newAvatarFile ? URL.createObjectURL(newAvatarFile) : profile?.avatar_url || undefined}
           fallback={formData?.first_name?.[0] || user?.email?.[0] || 'U'}
-          onFileSelect={setNewAvatarFile}
+          onFileSelect={handleAvatarSelect}
         />
         <Separator />
         <div className="grid md:grid-cols-2 gap-4">

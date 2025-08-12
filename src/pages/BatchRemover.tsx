@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MultiImageUploader } from '@/components/MultiImageUploader';
 import { FileQueueItem } from '@/components/FileQueueItem';
 import { Loader2, Download, Play, Trash2, CreditCard } from 'lucide-react';
-import { showError } from '@/utils/toast';
+import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { gsap } from 'gsap';
 import JSZip from 'jszip';
 import { useSession } from '@/hooks/useSession';
@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { saveCreation } from '@/utils/creations';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { resizeImage } from '@/utils/image';
 
 export interface QueueFile {
   id: string;
@@ -121,18 +122,30 @@ const BatchRemover = () => {
     }
   };
 
-  const handleFilesSelect = (files: File[]) => {
+  const handleFilesSelect = async (files: File[]) => {
     if (!session) {
       showError("Please log in to use the batch processing feature.");
       return;
     }
-    const newQueueFiles: QueueFile[] = files.map(file => ({
-      id: `${file.name}-${file.lastModified}-${Math.random()}`,
-      file,
-      status: 'queued',
-      progress: 0,
-    }));
-    setQueue(prev => [...prev, ...newQueueFiles]);
+
+    const toastId = showLoading(`Preparing ${files.length} image(s)...`);
+    try {
+      const resizePromises = files.map(file => resizeImage(file, 1920));
+      const resizedFiles = await Promise.all(resizePromises);
+
+      const newQueueFiles: QueueFile[] = resizedFiles.map(file => ({
+        id: `${file.name}-${file.lastModified}-${Math.random()}`,
+        file,
+        status: 'queued',
+        progress: 0,
+      }));
+      setQueue(prev => [...prev, ...newQueueFiles]);
+      dismissToast(toastId);
+    } catch (error) {
+      dismissToast(toastId);
+      showError("There was an error preparing some images. Please check the file types and try again.");
+      console.error("Batch image resizing failed:", error);
+    }
   };
 
   const handleProcessBatch = async () => {

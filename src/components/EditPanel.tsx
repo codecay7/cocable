@@ -4,7 +4,6 @@ import { ColorPicker } from './ColorPicker';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Paintbrush, Sparkles, ImageIcon } from 'lucide-react';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
 
 interface EditPanelProps {
@@ -69,16 +68,32 @@ export const EditPanel: React.FC<EditPanelProps> = ({
         </div>
       </TabsContent>
       <TabsContent value="image" className="mt-4">
-        <div className="p-4 border rounded-lg bg-muted/50 space-y-4">
-          <Label htmlFor="bg-upload" className="font-medium text-center block">Upload a Custom Background</Label>
-          <Input
-            id="bg-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-          />
-          <p className="text-xs text-muted-foreground text-center">Or use a quick preset for your product.</p>
+        <div className="p-4 border rounded-lg bg-muted/50 space-y-4 text-center">
+          <Label className="font-medium">Upload a Custom Background</Label>
+          <Button asChild variant="outline" className="w-full cursor-pointer">
+            <label>
+              <ImageIcon className="w-4 h-4 mr-2" />
+              Choose an image
+              <input
+                id="bg-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+          </Button>
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-muted/50 px-2 text-muted-foreground">
+                Or
+              </span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Use a quick preset for your product.</p>
           <div className="flex justify-center gap-2">
             <Button onClick={() => onBgChange('#FFFFFF')} variant="outline">White Background</Button>
             <Button onClick={() => onBgChange('#000000')} variant="outline">Black Background</Button>

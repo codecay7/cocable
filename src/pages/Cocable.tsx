@@ -284,15 +284,13 @@ const Cocable = () => {
         <ComparisonSlider
           original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage)} alt="Original Image" />}
           modified={
-            <div className="w-full h-full" style={{ background }}>
-              <ReactCompareSliderImage
-                src={processedImage}
-                alt="Result"
-                style={{
-                  filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
-                }}
-              />
-            </div>
+            <ReactCompareSliderImage
+              src={processedImage}
+              alt="Result"
+              style={{
+                filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
+              }}
+            />
           }
         />
       );

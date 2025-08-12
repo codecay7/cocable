@@ -48,7 +48,6 @@ const Login = () => {
               },
             }}
             providers={[]}
-            theme="dark"
             view="sign_in"
           />
           <p className="px-8 text-center text-sm text-muted-foreground">

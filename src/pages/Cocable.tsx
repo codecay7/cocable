@@ -49,7 +49,6 @@ const Cocable = () => {
   const [isShareSupported, setIsShareSupported] = useState(false);
   const [quality, setQuality] = useState<'general' | 'landscape'>('general');
   const [isRefining, setIsRefining] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
   const cardRef = useRef(null);
   const { session, user } = useSession();
   const { openModal } = usePurchaseModal();
@@ -78,7 +77,6 @@ const Cocable = () => {
       setBackground('transparent');
       setIsShadowEnabled(false);
       setIsRefining(false);
-      setShowCompare(false);
       dismissToast(toastId);
     } catch (error) {
       dismissToast(toastId);
@@ -256,13 +254,12 @@ const Cocable = () => {
     setBackground('transparent');
     setIsShadowEnabled(false);
     setIsRefining(false);
-    setShowCompare(false);
   };
 
   const ResultDisplay = () => {
     if (!processedImage || !originalImage) return null;
 
-    const finalImage = (
+    return (
       <div 
         className="w-full min-h-[40vh] flex items-center justify-center rounded-md overflow-hidden border"
         style={{ background }}
@@ -278,24 +275,6 @@ const Cocable = () => {
         />
       </div>
     );
-
-    if (showCompare) {
-      return (
-        <ComparisonSlider
-          original={<ReactCompareSliderImage src={URL.createObjectURL(originalImage)} alt="Original Image" />}
-          modified={
-            <ReactCompareSliderImage
-              src={processedImage}
-              alt="Result"
-              style={{
-                filter: isShadowEnabled ? 'drop-shadow(0 10px 15px rgba(0,0,0,0.25))' : 'none',
-              }}
-            />
-          }
-        />
-      );
-    }
-    return finalImage;
   };
 
   return (
@@ -375,9 +354,6 @@ const Cocable = () => {
                   <div className="flex flex-col sm:flex-row justify-center items-center gap-2 w-full">
                     <Button onClick={() => setIsRefining(true)} variant="secondary" className="w-full sm:w-auto">
                       <Wand2 className="mr-2 h-4 w-4" /> Refine Manually
-                    </Button>
-                    <Button onClick={() => setShowCompare(s => !s)} variant="outline" className="w-full sm:w-auto">
-                      <Eye className="mr-2 h-4 w-4" /> {showCompare ? 'Hide' : 'Show'} Compare
                     </Button>
                   </div>
                 </div>

@@ -1,6 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Wand2, X } from 'lucide-react';
+import { Wand2 } from 'lucide-react';
+
+// Correct X logo SVG component
+const XLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" fill="currentColor"/>
+  </svg>
+);
 
 const tools = [
   { name: "Background Remover", path: "/cocable" },
@@ -10,7 +17,7 @@ const tools = [
 ];
 
 const socialLinks = [
-  { icon: <X className="h-5 w-5" />, href: "https://x.com/cocableai" },
+  { icon: <XLogo className="h-5 w-5" />, href: "https://x.com/cocableai" },
 ];
 
 export const Footer = () => {

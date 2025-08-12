@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Wand2, Twitter, Instagram, Facebook } from 'lucide-react';
 
 const tools = [
-  { name: "Background Remover", path: "/clearcut" },
+  { name: "Background Remover", path: "/cocable" },
   { name: "AI Image Upscaler", path: "/upscaler" },
   { name: "AI Object Remover", path: "/object-remover" },
   { name: "Batch Remover", path: "/batch-remover" },

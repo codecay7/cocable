@@ -18,7 +18,7 @@ import { Badge } from './ui/badge';
 const tools = [
   {
     name: "Background Remover",
-    path: "/clearcut",
+    path: "/cocable",
     description: "Instantly remove the background from any image.",
     icon: <Scissors className="h-5 w-5" />,
     status: 'live',

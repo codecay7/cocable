@@ -35,7 +35,7 @@ export const FeaturesHighlight = () => {
             <li className="flex items-center"><ArrowRight className="h-4 w-4 mr-2 text-primary" /> Save time with our batch processing tool.</li>
           </ul>
           <Button asChild size="lg" className="mt-8">
-            <Link to="/clearcut">
+            <Link to="/cocable">
               Try Background Remover <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </Button>

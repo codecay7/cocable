@@ -12,7 +12,7 @@ export const Cta = () => {
           Stop wasting time with complicated software. Start creating stunning visuals with the power of AI today.
         </p>
         <Button asChild size="lg" className="mt-8">
-          <Link to="/clearcut">
+          <Link to="/cocable">
             Get Started for Free <ArrowRight className="w-4 h-4 ml-2" />
           </Link>
         </Button>

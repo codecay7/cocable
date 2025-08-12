@@ -17,7 +17,7 @@ gsap.registerPlugin(ScrollTrigger);
 const tools = [
   {
     name: "AI Background Remover",
-    path: "/clearcut",
+    path: "/cocable",
     description: "Instantly remove the background from any image with one click.",
     icon: <Scissors />,
     status: 'live',

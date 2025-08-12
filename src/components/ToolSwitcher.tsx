@@ -8,7 +8,7 @@ import { Badge } from './ui/badge';
 const switcherTools = [
   {
     name: "Background Remover & Changer",
-    path: "/clearcut",
+    path: "/cocable",
     description: "Remove, or replace the background of any image.",
     icon: <Scissors className="h-6 w-6" />,
     status: 'live',

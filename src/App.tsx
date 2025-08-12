@@ -39,7 +39,7 @@ const App = () => (
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/clearcut" element={<Cocable />} />
+                <Route path="/cocable" element={<Cocable />} />
                 <Route path="/upscaler" element={<Upscaler />} />
                 <Route path="/batch-remover" element={<BatchRemover />} />
                 <Route path="/object-remover" element={<ObjectRemover />} />

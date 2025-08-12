@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Wand2, Twitter, Instagram, Facebook } from 'lucide-react';
+import { Wand2, X } from 'lucide-react';
 
 const tools = [
   { name: "Background Remover", path: "/cocable" },
@@ -10,8 +10,7 @@ const tools = [
 ];
 
 const socialLinks = [
-  { icon: <Twitter className="h-5 w-5" />, href: "#" },
-  
+  { icon: <X className="h-5 w-5" />, href: "https://x.com/cocableai" },
 ];
 
 export const Footer = () => {
@@ -30,7 +29,13 @@ export const Footer = () => {
             </p>
             <div className="flex space-x-4">
               {socialLinks.map((social, index) => (
-                <a key={index} href={social.href} className="text-muted-foreground hover:text-primary transition-colors">
+                <a 
+                  key={index} 
+                  href={social.href} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   {social.icon}
                 </a>
               ))}

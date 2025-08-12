@@ -74,4 +74,8 @@
   .text-gradient {
     @apply bg-clip-text text-transparent;
   }
+  .bg-dot-pattern {
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--border) / 0.5) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
 }

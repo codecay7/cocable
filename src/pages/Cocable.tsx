@@ -38,7 +38,7 @@ const fetchCredits = async (userId: string): Promise<number> => {
   return data.credits;
 };
 
-const ClearCut = () => {
+const Cocable = () => {
   const [originalImage, setOriginalImage] = useState<File | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [background, setBackground] = useState<string>('transparent');
@@ -399,4 +399,4 @@ const ClearCut = () => {
   );
 };
 
-export default ClearCut;
+export default Cocable;

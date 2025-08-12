@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import ClearCut from "./pages/ClearCut";
+import Cocable from "./pages/Cocable";
 import Upscaler from "./pages/Upscaler";
 import BatchRemover from "./pages/BatchRemover";
 import ObjectRemover from "./pages/ObjectRemover";
@@ -39,7 +39,7 @@ const App = () => (
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Index />} />
-                <Route path="/clearcut" element={<ClearCut />} />
+                <Route path="/clearcut" element={<Cocable />} />
                 <Route path="/upscaler" element={<Upscaler />} />
                 <Route path="/batch-remover" element={<BatchRemover />} />
                 <Route path="/object-remover" element={<ObjectRemover />} />

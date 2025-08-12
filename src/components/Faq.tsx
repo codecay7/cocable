@@ -12,20 +12,20 @@ gsap.registerPlugin(ScrollTrigger);
 
 const faqs = [
   {
-    question: "Is Cocable AI completely free to use?",
-    answer: "Yes, all tools on Cocable AI are currently free to use without any limits. We believe in providing powerful image editing capabilities to everyone."
+    question: "How does pricing work? Is it free?",
+    answer: "We offer a hybrid model! You get 3 free uses across all our tools every day. For more extensive use, you can purchase credits. Premium features like Batch Processing may require credits from the start."
   },
   {
-    question: "What image formats do you support?",
-    answer: "We support the most common image formats, including PNG, JPG/JPEG, and WEBP. For best results with background removal, we recommend using images with clear subjects."
-  },
-  {
-    question: "Do I need to create an account to use the tools?",
-    answer: "No account needed! You can start editing your images right away. We value your time and privacy, so we've made the process as seamless as possible."
+    question: "Do I need to create an account?",
+    answer: "Yes, an account is required to use our tools. This allows us to track your daily free uses, manage your credits, and provide you with a personal gallery to save and access your creations."
   },
   {
     question: "Are my images stored on your servers?",
-    answer: "Your privacy is our top priority. All image processing is done directly in your browser. Your images are never uploaded to or stored on our servers."
+    answer: "Yes, when you process an image, we save it to your private 'My Creations' gallery for your convenience. You have full control and can view, download, or permanently delete your images from your gallery at any time."
+  },
+  {
+    question: "What are credits and do they expire?",
+    answer: "Credits are used for our tools after you've used your free daily allowance. 1 credit typically equals 1 image process. Credits never expire, and you can purchase more from your profile page whenever you need them."
   }
 ];
 

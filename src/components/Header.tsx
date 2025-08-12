@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Scissors, ArrowUpRightSquare, Menu, Eraser, CopyPlus, Palette } from 'lucide-react';
+import { Wand2, Scissors, ArrowUpRightSquare, Menu, Eraser, CopyPlus, Palette } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { cn } from '@/lib/utils';
 import {
@@ -107,7 +107,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/30 backdrop-blur-lg">
       <div className="container flex h-14 items-center">
         <Link to="/" className="flex items-center space-x-2 mr-6">
-          <Scissors className="h-6 w-6 text-primary" />
+          <Wand2 className="h-6 w-6 text-primary" />
           <span className="font-bold">Cocable AI</span>
         </Link>
         

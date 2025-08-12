@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Scissors, Twitter, Instagram, Facebook } from 'lucide-react';
+import { Wand2, Twitter, Instagram, Facebook } from 'lucide-react';
 
 const tools = [
   { name: "Background Remover", path: "/clearcut" },
@@ -22,7 +22,7 @@ export const Footer = () => {
           {/* Brand Section */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center space-x-2">
-              <Scissors className="h-7 w-7 text-primary" />
+              <Wand2 className="h-7 w-7 text-primary" />
               <span className="text-xl font-bold">Cocable AI</span>
             </Link>
             <p className="text-muted-foreground text-sm">

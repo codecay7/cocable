@@ -13,12 +13,15 @@ import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast
 import { Loader2, CreditCard, CheckCircle } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { useQueryClient } from '@tanstack/react-query';
+import { loadScript } from '@/utils/loadScript';
 
 declare global {
   interface Window {
     Razorpay: any;
   }
 }
+
+const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
 
 interface BuyCreditsModalProps {
   isOpen: boolean;
@@ -41,6 +44,14 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
 
     if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
       showError("Payment provider is not configured. Please contact support.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await loadScript(RAZORPAY_SCRIPT);
+    } catch (error) {
+      showError("Could not connect to payment provider. Please check your network and try again.");
       setIsLoading(false);
       return;
     }
@@ -113,7 +124,8 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (e) {
-      showError('Could not open payment window.');
+      console.error("Razorpay Error:", e);
+      showError('Could not open payment window. Please try again.');
       setIsLoading(false);
     }
   };

@@ -108,7 +108,7 @@ const Index = () => {
             <h1 className="anim-title text-4xl md:text-8xl font-extrabold tracking-tight">
               AI-Powered Image Editing, <span className="text-gradient bg-gradient-to-r from-primary to-purple-400">Simplified.</span>
             </h1>
-            <p className="anim-p mt-6 text-s md:text-xl text-muted-foreground">
+            <p className="anim-p mt-6 text-xs md:text-xl text-muted-foreground">
               Instantly remove backgrounds, upscale images, and erase objects with our suite of free AI tools.
             </p>
           </div>

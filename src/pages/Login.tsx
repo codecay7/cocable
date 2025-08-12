@@ -18,7 +18,7 @@ const Login = () => {
       <Card className="w-full max-w-md bg-card/80 backdrop-blur-xl">
         <CardHeader className="text-center">
           <Scissors className="h-10 w-10 mx-auto text-primary" />
-          <CardTitle className="text-2xl font-bold mt-4">Welcome to ClearCut AI</CardTitle>
+          <CardTitle className="text-2xl font-bold mt-4">Welcome to Cocable AI</CardTitle>
           <CardDescription>Sign in or create an account to continue</CardDescription>
         </CardHeader>
         <CardContent>

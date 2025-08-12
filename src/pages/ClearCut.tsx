@@ -205,7 +205,7 @@ const ClearCut = () => {
     const imageHref = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = imageHref;
-    link.download = 'clearcut-result.png';
+    link.download = 'cocable-result.png';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -223,9 +223,9 @@ const ClearCut = () => {
         return;
       }
       try {
-        const file = new File([blob], 'clearcut-result.png', { type: 'image/png' });
+        const file = new File([blob], 'cocable-result.png', { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Image edited with ClearCut AI' });
+          await navigator.share({ files: [file], title: 'Image edited with Cocable AI' });
         } else {
           showError("Your browser doesn't support sharing files.");
         }
@@ -292,7 +292,7 @@ const ClearCut = () => {
     <div className="container mx-auto p-4 md:p-8">
       <Card ref={cardRef} className="max-w-4xl mx-auto bg-card/50 backdrop-blur-xl border-white/20">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">ClearCut AI Background Remover</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Cocable AI Background Remover</CardTitle>
           <CardDescription className="text-center">
             This tool uses a model optimized for people. For best results with objects or complex scenes, use High Quality mode.
             <br />

@@ -11,7 +11,7 @@ const Refunds = () => {
           <p>Last updated: {new Date().toLocaleDateString()}</p>
           
           <h2>Credit Purchases</h2>
-          <p>Thank you for purchasing credits at ClearCut AI. We appreciate your business.</p>
+          <p>Thank you for purchasing credits at Cocable AI. We appreciate your business.</p>
           <p>All purchases of credit packs are final and non-refundable. Once credits are purchased and added to your account, they cannot be refunded or exchanged for cash.</p>
           <p>The credits you purchase do not expire and can be used for any premium feature available on our platform.</p>
 

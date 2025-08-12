@@ -23,7 +23,7 @@ export const Footer = () => {
           <div className="space-y-4">
             <Link to="/" className="flex items-center space-x-2">
               <Scissors className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold">ClearCut AI</span>
+              <span className="text-xl font-bold">Cocable AI</span>
             </Link>
             <p className="text-muted-foreground text-sm">
               AI-powered image editing tools to simplify your creative workflow.
@@ -74,7 +74,7 @@ export const Footer = () => {
 
         <div className="mt-12 border-t border-border/40 pt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} ClearCut AI. All rights reserved.
+            &copy; {new Date().getFullYear()} Cocable AI. All rights reserved.
           </p>
         </div>
       </div>

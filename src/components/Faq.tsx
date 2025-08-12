@@ -12,8 +12,8 @@ gsap.registerPlugin(ScrollTrigger);
 
 const faqs = [
   {
-    question: "Is ClearCut AI completely free to use?",
-    answer: "Yes, all tools on ClearCut AI are currently free to use without any limits. We believe in providing powerful image editing capabilities to everyone."
+    question: "Is Cocable AI completely free to use?",
+    answer: "Yes, all tools on Cocable AI are currently free to use without any limits. We believe in providing powerful image editing capabilities to everyone."
   },
   {
     question: "What image formats do you support?",

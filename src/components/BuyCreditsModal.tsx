@@ -77,7 +77,7 @@ export const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onOpen
       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
       amount: order.amount,
       currency: order.currency,
-      name: 'ClearCut AI',
+      name: 'Cocable AI',
       description: '50 Credits Pack',
       order_id: order.id,
       handler: async function (response: any) {

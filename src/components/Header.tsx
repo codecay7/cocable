@@ -108,7 +108,7 @@ export const Header = () => {
       <div className="container flex h-14 items-center">
         <Link to="/" className="flex items-center space-x-2 mr-6">
           <Scissors className="h-6 w-6 text-primary" />
-          <span className="font-bold">ClearCut AI</span>
+          <span className="font-bold">Cocable AI</span>
         </Link>
         
         {/* Desktop Navigation */}

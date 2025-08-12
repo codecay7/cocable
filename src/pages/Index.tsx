@@ -112,7 +112,7 @@ const Index = () => {
               Instantly remove backgrounds, upscale images, and erase objects with our suite of free AI tools.
             </p>
           </div>
-          <div className="w-full max-w-7xl grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {tools.map((tool) => (
               <ToolCard key={tool.name} tool={tool} />
             ))}

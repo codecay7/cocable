@@ -11,8 +11,7 @@ const tools = [
 
 const socialLinks = [
   { icon: <Twitter className="h-5 w-5" />, href: "#" },
-  { icon: <Instagram className="h-5 w-5" />, href: "#" },
-  { icon: <Facebook className="h-5 w-5" />, href: "#" },
+  
 ];
 
 export const Footer = () => {

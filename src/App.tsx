@@ -23,6 +23,7 @@ import Creations from "./pages/Creations";
 import Admin from "./pages/Admin";
 import { CreativeLoader } from "./components/CreativeLoader";
 import { gsap } from 'gsap';
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -47,43 +48,45 @@ const App = () => {
   }, [isLoading]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Sonner />
-        {isLoading && <CreativeLoader onComplete={() => setIsLoading(false)} />}
-        <div
-          ref={appContentRef}
-          style={{ opacity: 0, transform: 'translateY(20px)' }}
-        >
-          <BrowserRouter>
-            <SessionProvider>
-              <PurchaseModalProvider>
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/cocable" element={<Cocable />} />
-                    <Route path="/upscaler" element={<Upscaler />} />
-                    <Route path="/batch-remover" element={<BatchRemover />} />
-                    <Route path="/object-remover" element={<ObjectRemover />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/creations" element={<Creations />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="/refunds" element={<Refunds />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/admin" element={<Admin />} />
-                  </Route>
-                  <Route path="/login" element={<Login />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <AppWithModal />
-              </PurchaseModalProvider>
-            </SessionProvider>
-          </BrowserRouter>
-        </div>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          {isLoading && <CreativeLoader onComplete={() => setIsLoading(false)} />}
+          <div
+            ref={appContentRef}
+            style={{ opacity: 0, transform: 'translateY(20px)' }}
+          >
+            <BrowserRouter>
+              <SessionProvider>
+                <PurchaseModalProvider>
+                  <Routes>
+                    <Route element={<Layout />}>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/cocable" element={<Cocable />} />
+                      <Route path="/upscaler" element={<Upscaler />} />
+                      <Route path="/batch-remover" element={<BatchRemover />} />
+                      <Route path="/object-remover" element={<ObjectRemover />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/creations" element={<Creations />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/terms" element={<Terms />} />
+                      <Route path="/refunds" element={<Refunds />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/admin" element={<Admin />} />
+                    </Route>
+                    <Route path="/login" element={<Login />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <AppWithModal />
+                </PurchaseModalProvider>
+              </SessionProvider>
+            </BrowserRouter>
+          </div>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
